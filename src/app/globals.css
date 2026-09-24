@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+:root {
+  --background: #070b14;
+  --foreground: #f8fafc;
+  --color-cyan-glow: rgba(6, 182, 212, 0.35);
+  --color-emerald-glow: rgba(16, 185, 129, 0.35);
+  --color-indigo-glow: rgba(99, 102, 241, 0.35);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html, body {
+  background-color: #070b14;
+  color: #f8fafc;
+  overflow-x: hidden;
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  scroll-behavior: smooth;
+}
+
+/* Cosmic Luminous Grid Background with Developer Tooling Palette */
+.bg-cosmic-grid {
+  background-color: #070b14;
+  background-image: 
+    radial-gradient(circle at 50% 0%, rgba(6, 182, 212, 0.14) 0%, transparent 50%),
+    radial-gradient(circle at 100% 30%, rgba(99, 102, 241, 0.12) 0%, transparent 45%),
+    radial-gradient(circle at 0% 60%, rgba(16, 185, 129, 0.10) 0%, transparent 45%),
+    radial-gradient(circle at 80% 90%, rgba(244, 63, 94, 0.08) 0%, transparent 40%),
+    linear-gradient(to right, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 48px 48px, 48px 48px;
+}
+
+/* Luxury 3D Glass Slab */
+.glass-slab-3d {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(3, 7, 18, 0.92) 100%);
+  backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.85),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 1px 0 rgba(0, 0, 0, 0.5);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-slab-3d:hover {
+  transform: translateY(-4px) scale(1.005);
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: 
+    0 35px 60px -15px rgba(0, 0, 0, 0.95),
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.35);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: #070b14;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #06b6d4, #6366f1);
+  border-radius: 9999px;
+  border: 1px solid #070b14;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #22d3ee, #818cf8);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out forwards;
+}
