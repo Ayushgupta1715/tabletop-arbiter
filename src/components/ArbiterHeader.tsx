@@ -71,13 +71,15 @@ export function ArbiterHeader({
               <ExternalLink className="w-3 h-3 text-[var(--muted)]" />
             </Link>
 
-            {/* MCP Protocol Link - Clean Text Link */}
+            {/* MCP Protocol Hub Button - Prominent Active Badge */}
             <button
               onClick={onOpenMcpInspector}
-              className="text-xs text-[var(--muted)] hover:text-[var(--parchment-bright)] transition-colors flex items-center gap-1 font-sans cursor-pointer"
+              className="px-2.5 py-1 rounded-lg text-xs font-mono font-semibold text-[var(--brass-light)] bg-[rgba(224,172,66,0.12)] border border-[var(--brass-dim)] hover:bg-[rgba(224,172,66,0.22)] transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+              title="Inspect Sanity Context MCP Tools & Telemetry"
             >
-              <Terminal className="w-3.5 h-3.5 text-[var(--brass-dim)]" />
-              <span className="hidden sm:inline">MCP Protocol</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#34D399] animate-pulse" />
+              <Terminal className="w-3.5 h-3.5 text-[var(--brass-light)]" />
+              <span>Sanity MCP (4 Tools)</span>
             </button>
 
             {/* Contradictions Matrix Link - Clean Text Link */}
