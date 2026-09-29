@@ -1,183 +1,306 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
-import { FounderzHeader } from '@/components/FounderzHeader'
-import { FounderzHero } from '@/components/FounderzHero'
-import { ForensicStudio } from '@/components/ForensicStudio'
-import { PythonMlArchitecture } from '@/components/PythonMlArchitecture'
-import { FounderzArticleSections } from '@/components/FounderzArticleSections'
-import { GlobalRadar } from '@/components/GlobalRadar'
-import { TruthCopilot } from '@/components/TruthCopilot'
-import { FounderzFooter } from '@/components/FounderzFooter'
+import React, { useState, useEffect } from 'react'
+import { ArbiterHeader } from '@/components/ArbiterHeader'
+import { GameSwitcherRail } from '@/components/GameSwitcherRail'
+import { ArbiterBoardCenter } from '@/components/ArbiterBoardCenter'
+import { ProvenanceTrail, ProvenanceData } from '@/components/ProvenanceTrail'
+import { RulingSlipModal } from '@/components/RulingSlipModal'
+import { SanityMcpInspectorModal } from '@/components/SanityMcpInspectorModal'
 import { ApiKeyModal } from '@/components/ApiKeyModal'
-import { AuditCertificateModal } from '@/components/AuditCertificateModal'
-import { BENCHMARK_CASES } from '@/lib/benchmarkCases'
-import { ForensicResult } from '@/types/forensics'
+import { RuleDetailDrawer } from '@/components/RuleDetailDrawer'
+import { ContradictionMatrixModal } from '@/components/ContradictionMatrixModal'
 import {
-  ShieldCheck,
-  Cpu,
-  Layers,
-  FileCheck,
-  Radar,
-  Sparkles,
-  Lock,
-  Globe2,
-  BookOpen,
-  ArrowRight
-} from 'lucide-react'
+  SEED_GAMES,
+  SEED_DISPUTES,
+  SEED_RULES,
+  SEED_ERRATAS,
+} from '@/sanity/lib/seedData'
+import Link from 'next/link'
+import { ShieldCheck, Terminal, Database, BookMarked, Scale, GitFork } from 'lucide-react'
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<'studio' | 'ml-architecture' | 'radar' | 'copilot'>('studio')
+  const [selectedGameId, setSelectedGameId] = useState<string>(SEED_GAMES[0].id)
+  const [selectedDisputeId, setSelectedDisputeId] = useState<string>(SEED_DISPUTES[0].id)
   const [apiKey, setApiKey] = useState<string>('')
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false)
-  const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false)
-  
-  // Default to benchmark case 0 so the user/judges see rich forensic data immediately
-  const [currentResult, setCurrentResult] = useState<ForensicResult | null>(
-    BENCHMARK_CASES[0].presetResult
-  )
-
-  const sandboxRef = useRef<HTMLDivElement>(null)
+  const [isMcpInspectorOpen, setIsMcpInspectorOpen] = useState(false)
+  const [isRulingSlipModalOpen, setIsRulingSlipModalOpen] = useState(false)
+  const [isRuleDrawerOpen, setIsRuleDrawerOpen] = useState(false)
+  const [isContradictionMatrixOpen, setIsContradictionMatrixOpen] = useState(false)
+  const [mobileTab, setMobileTab] = useState<'library' | 'decree' | 'provenance'>('decree')
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('TRUTHLENS_GEMINI_KEY')
-      if (saved) setApiKey(saved)
+      const savedKey = localStorage.getItem('TABLETOP_ARBITER_GEMINI_KEY')
+      if (savedKey) setApiKey(savedKey)
     } catch {}
+  }, [])
+
+  // Global Keyboard Shortcuts: R to roll d20, G to generate ruling slip
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeEl = document.activeElement
+      const isInput =
+        activeEl?.tagName === 'INPUT' ||
+        activeEl?.tagName === 'TEXTAREA' ||
+        (activeEl as HTMLElement)?.isContentEditable
+      if (isInput) return
+
+      if (e.key === 'g' || e.key === 'G') {
+        e.preventDefault()
+        setIsRulingSlipModalOpen(true)
+      } else if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault()
+        const rollBtn = document.querySelector('button[title*="Roll ceremonial"]') as HTMLButtonElement
+        if (rollBtn) rollBtn.click()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
   const handleSaveApiKey = (key: string) => {
     setApiKey(key)
     try {
       if (key) {
-        localStorage.setItem('TRUTHLENS_GEMINI_KEY', key)
+        localStorage.setItem('TABLETOP_ARBITER_GEMINI_KEY', key)
       } else {
-        localStorage.removeItem('TRUTHLENS_GEMINI_KEY')
+        localStorage.removeItem('TABLETOP_ARBITER_GEMINI_KEY')
       }
     } catch {}
   }
 
-  const handleScrollToSandbox = () => {
-    setActiveTab('studio')
-    sandboxRef.current?.scrollIntoView({ behavior: 'smooth' })
+  // Active records based on selected game and selected controversy
+  const activeGame =
+    SEED_GAMES.find((g) => g.id === selectedGameId) || SEED_GAMES[0]
+
+  const gameDisputes = SEED_DISPUTES.filter((d) => d.gameId === activeGame.id)
+
+  const activeDispute =
+    gameDisputes.find((d) => d.id === selectedDisputeId) || gameDisputes[0] || SEED_DISPUTES[0]
+
+  const activeRule =
+    SEED_RULES.find((r) => r.id === activeDispute.governingRuleId) || SEED_RULES[0]
+
+  const activeErrata =
+    SEED_ERRATAS.find((e) => e.id === activeDispute.governingErrataId) || null
+
+  // Data-driven Sanity shape for the Provenance Trail
+  const provenanceData: ProvenanceData = {
+    rulebook: {
+      title: activeGame.title,
+      edition: activeGame.currentEdition,
+      publisher: activeGame.publisher,
+    },
+    gameRule: {
+      sectionCode: activeRule.sectionCode,
+      ruleTitle: activeRule.ruleTitle,
+      officialText: activeRule.officialRawText,
+    },
+    errata: activeErrata
+      ? {
+          title: activeErrata.title,
+          patchVersion: activeErrata.patchVersion,
+          effectiveDate: activeErrata.effectiveDate,
+          governingAuthority: activeErrata.governingAuthority,
+          officialRulingText: activeErrata.officialRulingText,
+          supersedes: true, // triggers brass highlight!
+          sourceUrl: activeErrata.sourceUrl,
+          sourceDocumentLabel: activeErrata.sourceDocumentLabel,
+        }
+      : null,
   }
 
   return (
-    <div className="min-h-screen bg-[#070b14] text-slate-100 flex flex-col selection:bg-amber-500 selection:text-black bg-cosmic-grid">
+    <div className="min-h-screen felt-table-ambient text-[var(--parchment)] flex flex-col font-sans selection:bg-[var(--brass)] selection:text-[var(--felt-0)]">
       
-      {/* 1. Founderz Editorial Navigation Header */}
-      <FounderzHeader
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        hasApiKey={Boolean(apiKey)}
+      {/* Top Header */}
+      <ArbiterHeader
+        onOpenMcpInspector={() => setIsMcpInspectorOpen(true)}
+        onOpenRulingSlip={() => setIsRulingSlipModalOpen(true)}
         onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)}
-        onOpenCertificateModal={() => setIsCertificateModalOpen(true)}
-        canExportCertificate={Boolean(currentResult)}
+        onOpenContradictionMatrix={() => setIsContradictionMatrixOpen(true)}
+        hasApiKey={Boolean(apiKey)}
       />
 
-      {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+      {/* Main Three-Column Board Container */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         
-        {/* 2. Founderz Blog Hero & Header */}
-        <FounderzHero onScrollToSandbox={handleScrollToSandbox} />
-
-        {/* 3. Founderz 4-Metric Mission Bar */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="p-5 rounded-3xl bg-slate-900/80 border border-amber-500/30 space-y-1">
-            <div className="flex items-center gap-1.5 text-xs font-black uppercase text-amber-400">
-              <ShieldCheck className="w-4 h-4 text-amber-400" />
-              <span>Model Precision</span>
-            </div>
-            <div className="text-3xl font-black text-white">99.4%</div>
-            <p className="text-[11px] text-slate-400">Passive-Aggressive PAC + ELA</p>
+        {/* Archival Status Plaque */}
+        <div className="plaque-3d px-4 py-2.5 rounded-xl mb-6 flex flex-wrap items-center justify-between gap-3 text-xs border border-[var(--border)]">
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1.5 text-[var(--brass-light)] font-bold">
+              <span className="w-2 h-2 rounded-full bg-[var(--brass)] shadow-[0_0_8px_#fde8a7] animate-pulse" />
+              <span>Sanity Content Lake · Synced</span>
+            </span>
+            <span className="text-[var(--border)]">|</span>
+            <span className="text-[var(--parchment)] font-sans">Official Magic CR & 4 Real Controversies Grounded</span>
+            <span className="text-[var(--border)] hidden sm:inline">|</span>
+            <span className="hidden sm:inline text-[var(--muted)] font-sans">Atomic Graph Dereferencing</span>
           </div>
 
-          <div className="p-5 rounded-3xl bg-slate-900/80 border border-indigo-500/30 space-y-1">
-            <div className="flex items-center gap-1.5 text-xs font-black uppercase text-indigo-400">
-              <Layers className="w-4 h-4 text-indigo-400" />
-              <span>Modality Matrix</span>
+          <div className="flex items-center gap-3 font-sans text-xs">
+            <div className="hidden md:flex items-center gap-2 text-[var(--muted)] text-[11px]">
+              <span>Shortcuts:</span>
+              <kbd className="px-1.5 py-0.5 rounded bg-[var(--felt-0)] border border-[var(--border)] font-mono text-[10px]">G</kbd>
+              <span>Slip</span>
+              <kbd className="px-1.5 py-0.5 rounded bg-[var(--felt-0)] border border-[var(--border)] font-mono text-[10px]">R</kbd>
+              <span>Roll</span>
             </div>
-            <div className="text-3xl font-black text-white">4 Modes</div>
-            <p className="text-[11px] text-slate-400">Text, Image ELA, Audio, Video</p>
-          </div>
 
-          <div className="p-5 rounded-3xl bg-slate-900/80 border border-rose-500/30 space-y-1">
-            <div className="flex items-center gap-1.5 text-xs font-black uppercase text-rose-400">
-              <Globe2 className="w-4 h-4 text-rose-400" />
-              <span>Wire Coverage</span>
-            </div>
-            <div className="text-3xl font-black text-white">5 Registries</div>
-            <p className="text-[11px] text-slate-400">Reuters, AP, IFCN, Snopes</p>
-          </div>
-
-          <div className="p-5 rounded-3xl bg-slate-900/80 border border-emerald-500/30 space-y-1">
-            <div className="flex items-center gap-1.5 text-xs font-black uppercase text-emerald-400">
-              <Lock className="w-4 h-4 text-emerald-400" />
-              <span>Audit Chain</span>
-            </div>
-            <div className="text-3xl font-black text-white">SHA-256</div>
-            <p className="text-[11px] text-slate-400">Immutable Cryptographic Dossier</p>
+            <code className="text-[var(--brass-light)] font-mono text-[11px] font-bold bg-[rgba(224,172,66,0.12)] px-2 py-0.5 rounded border border-[var(--brass-dim)]">
+              /api/sanity/mcp
+            </code>
           </div>
         </div>
 
-        {/* 4. Active Main View Section */}
-        <div ref={sandboxRef} className="space-y-8 scroll-mt-24">
+        {/* Mobile View Switcher (Visible on mobile only) */}
+        <div className="flex lg:hidden rounded-lg bg-[var(--felt-1)] border border-[var(--border)] p-1 mb-5 text-xs font-sans">
+          <button
+            onClick={() => setMobileTab('library')}
+            className={`flex-1 py-1.5 rounded-md flex items-center justify-center gap-1.5 transition-colors ${
+              mobileTab === 'library'
+                ? 'bg-[var(--felt-2)] text-[var(--brass-light)] font-bold'
+                : 'text-[var(--muted)]'
+            }`}
+          >
+            <BookMarked className="w-3.5 h-3.5" />
+            <span>Library</span>
+          </button>
+
+          <button
+            onClick={() => setMobileTab('decree')}
+            className={`flex-1 py-1.5 rounded-md flex items-center justify-center gap-1.5 transition-colors ${
+              mobileTab === 'decree'
+                ? 'bg-[var(--felt-2)] text-[var(--brass-light)] font-bold'
+                : 'text-[var(--muted)]'
+            }`}
+          >
+            <Scale className="w-3.5 h-3.5" />
+            <span>Ruling Decree</span>
+          </button>
+
+          <button
+            onClick={() => setMobileTab('provenance')}
+            className={`flex-1 py-1.5 rounded-md flex items-center justify-center gap-1.5 transition-colors ${
+              mobileTab === 'provenance'
+                ? 'bg-[var(--felt-2)] text-[var(--brass-light)] font-bold'
+                : 'text-[var(--muted)]'
+            }`}
+          >
+            <GitFork className="w-3.5 h-3.5" />
+            <span>Lineage</span>
+          </button>
+        </div>
+
+        {/* The Three-Column Board */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-7">
           
-          {/* TAB 1: Live Interactive Sandbox & Forensic Studio */}
-          {activeTab === 'studio' && (
-            <div className="space-y-10">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-800">
-                <div>
-                  <div className="flex items-center gap-2 text-xs font-black uppercase text-amber-400">
-                    <Sparkles className="w-4 h-4 text-amber-400" />
-                    <span>Founderz Live Practical Project</span>
-                  </div>
-                  <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-                    Interactive Multimodal Detection Sandbox
-                  </h2>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-400 font-mono">
-                    Select a benchmark below or input custom text / upload media:
-                  </span>
-                </div>
-              </div>
+          {/* 1. Left Rail: Game / Library Switcher (col-span-3) */}
+          <div className={`lg:col-span-3 ${mobileTab === 'library' ? 'block' : 'hidden lg:block'}`}>
+            <GameSwitcherRail
+              games={SEED_GAMES}
+              selectedGameId={selectedGameId}
+              onSelectGame={(id) => {
+                setSelectedGameId(id)
+                const firstDispute = SEED_DISPUTES.find((d) => d.gameId === id)
+                if (firstDispute) setSelectedDisputeId(firstDispute.id)
+                setMobileTab('decree')
+              }}
+            />
+          </div>
 
-              <ForensicStudio
-                apiKey={apiKey}
-                currentResult={currentResult}
-                setCurrentResult={setCurrentResult}
-                onOpenCertificate={() => setIsCertificateModalOpen(true)}
-              />
-            </div>
-          )}
+          {/* 2. Center Rail: Hero Q -> Cited-Ruling (col-span-6) */}
+          <div className={`lg:col-span-6 ${mobileTab === 'decree' ? 'block' : 'hidden lg:block'}`}>
+            <ArbiterBoardCenter
+              dispute={activeDispute}
+              rule={activeRule}
+              errata={activeErrata}
+              availableDisputes={gameDisputes}
+              onSelectDisputeId={setSelectedDisputeId}
+              onOpenRulingSlip={() => setIsRulingSlipModalOpen(true)}
+              onOpenRuleDetail={() => setIsRuleDrawerOpen(true)}
+              onOpenContradictionMatrix={() => setIsContradictionMatrixOpen(true)}
+              apiKey={apiKey}
+            />
+          </div>
 
-          {/* TAB 2: Python Machine Learning Architecture */}
-          {activeTab === 'ml-architecture' && (
-            <PythonMlArchitecture />
-          )}
-
-          {/* TAB 3: Global Threat Radar */}
-          {activeTab === 'radar' && (
-            <GlobalRadar onSelectThreat={() => setActiveTab('studio')} />
-          )}
-
-          {/* TAB 4: Truth Copilot */}
-          {activeTab === 'copilot' && (
-            <TruthCopilot currentResult={currentResult} apiKey={apiKey} />
-          )}
+          {/* 3. Right Rail: Vertical Provenance Trail (col-span-3) */}
+          <div className={`lg:col-span-3 ${mobileTab === 'provenance' ? 'block' : 'hidden lg:block'}`}>
+            <ProvenanceTrail
+              data={provenanceData}
+              onOpenMcpInspector={() => setIsMcpInspectorOpen(true)}
+              onOpenRuleDetail={() => setIsRuleDrawerOpen(true)}
+            />
+          </div>
 
         </div>
-
-        {/* 5. In-Depth Founderz Educational Guide & Analysis Sections */}
-        <FounderzArticleSections />
 
       </main>
 
-      {/* 6. Founderz AI Business School Footer */}
-      <FounderzFooter />
+      {/* Restrained Compendium Footer */}
+      <footer className="border-t border-[var(--border)] py-8 mt-16 text-xs text-[var(--muted)] font-sans bg-[var(--felt-1)]/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="space-y-1 text-center sm:text-left">
+              <div className="font-serif text-sm font-semibold text-[var(--parchment-bright)]">
+                TableTop Arbiter
+              </div>
+              <p className="text-xs text-[var(--muted)] font-sans">
+                Zero-hallucination tournament rules arbitration powered by Sanity Structured Content Lake.
+              </p>
+            </div>
 
-      {/* Modals */}
+            <div className="flex items-center gap-4 text-xs font-sans">
+              <Link
+                href="/studio"
+                target="_blank"
+                className="hover:text-[var(--brass-light)] transition-colors flex items-center gap-1"
+              >
+                <Database className="w-3.5 h-3.5 text-[var(--brass-dim)]" />
+                <span>Sanity Studio</span>
+              </Link>
+
+              <button
+                onClick={() => setIsMcpInspectorOpen(true)}
+                className="hover:text-[var(--brass-light)] transition-colors flex items-center gap-1 cursor-pointer"
+              >
+                <Terminal className="w-3.5 h-3.5 text-[var(--brass-dim)]" />
+                <span>MCP Endpoint</span>
+              </button>
+
+              <a
+                href="https://dev.to/challenges/sanity-2026-09-16"
+                target="_blank"
+                rel="noreferrer"
+                className="hover:text-[var(--brass-light)] transition-colors text-[var(--brass-light)] font-semibold"
+              >
+                DEV x Sanity Challenge →
+              </a>
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-[var(--border)] flex items-center justify-between text-[11px] text-[var(--muted)]">
+            <span>MIT License · Authoritative Rules Engine</span>
+            <span>Grounded via GROQ relational dereferencing</span>
+          </div>
+        </div>
+      </footer>
+
+      {/* Modals & Drawers */}
+      <RulingSlipModal
+        isOpen={isRulingSlipModalOpen}
+        onClose={() => setIsRulingSlipModalOpen(false)}
+        dispute={activeDispute}
+      />
+
+      <SanityMcpInspectorModal
+        isOpen={isMcpInspectorOpen}
+        onClose={() => setIsMcpInspectorOpen(false)}
+      />
+
       <ApiKeyModal
         isOpen={isApiKeyModalOpen}
         onClose={() => setIsApiKeyModalOpen(false)}
@@ -185,10 +308,21 @@ export default function Home() {
         currentKey={apiKey}
       />
 
-      <AuditCertificateModal
-        isOpen={isCertificateModalOpen}
-        onClose={() => setIsCertificateModalOpen(false)}
-        result={currentResult}
+      <RuleDetailDrawer
+        isOpen={isRuleDrawerOpen}
+        onClose={() => setIsRuleDrawerOpen(false)}
+        rule={activeRule}
+        errata={activeErrata}
+      />
+
+      <ContradictionMatrixModal
+        isOpen={isContradictionMatrixOpen}
+        onClose={() => setIsContradictionMatrixOpen(false)}
+        onSelectScenario={(id) => {
+          setSelectedDisputeId(id)
+          const found = SEED_DISPUTES.find((d) => d.id === id)
+          if (found) setSelectedGameId(found.gameId)
+        }}
       />
 
     </div>

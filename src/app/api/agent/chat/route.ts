@@ -1,102 +1,83 @@
 import { NextResponse } from 'next/server'
-import { detectVersionDrift, inspectKnowledgeSources } from '@/lib/mcp/sanityContext'
+import { resolveTabletopDispute, queryTournamentKnowledgeLake } from '@/lib/mcp/sanityContext'
 
 export async function POST(req: Request) {
   try {
-    const { message, library } = await req.json()
+    const { message, game } = await req.json()
     if (!message || typeof message !== 'string') {
       return NextResponse.json({ error: 'Message query is required' }, { status: 400 })
     }
 
-    const driftResult = await detectVersionDrift({ query: message, library })
-    const topRecord = driftResult.matchedRecord
-    const sources = await inspectKnowledgeSources()
+    const arbiterResult = await resolveTabletopDispute({
+      scenarioQuery: message,
+      gameFilter: game,
+    })
 
-    let agentResponseText = ''
-    let citations: Array<{ label: string; url: string; category: string }> = []
+    const knowledgeLake = await queryTournamentKnowledgeLake({
+      query: message,
+      gameFilter: game,
+    })
 
-    if (topRecord) {
-      citations.push(
-        { label: `📘 Modern v4: ${topRecord.currentSourceLabel}`, url: topRecord.currentSourceUrl, category: 'Official Modern Documentation' },
-        { label: `📜 Legacy v3: ${topRecord.legacySourceLabel}`, url: topRecord.legacySourceUrl, category: 'Legacy Archive / Outdated Tutorial' },
-        { label: `💬 Community: ${topRecord.communitySourceLabel}`, url: topRecord.communitySourceUrl, category: 'GitHub Discussion & Pitfalls' }
-      )
+    const citations = [
+      {
+        label: `📜 Base Rule: ${arbiterResult.ruleCitation.sectionCode} (${arbiterResult.ruleCitation.edition})`,
+        url: '#',
+        category: 'Official Printed Rulebook',
+      },
+    ]
 
-      const severityBadge = topRecord.driftSeverity.toUpperCase().replace(/_/g, ' ')
-
-      agentResponseText = `### ⚡ Version-Drift Agent — Canonical Truth & Migration Resolution
-
-**Target Framework:** \`${topRecord.libraryName}\`  
-**Breaking Severity:** **${severityBadge}**  
-**Sanity Document Ref:** \`sanity://version-drift/${topRecord.id}\`  
-**Active Decision:** \`${topRecord.resolutionDecision}\`
-
----
-
-#### ⚖️ Side-by-Side Contradiction Breakdown:
-
-1. **📜 Legacy v3 Claim (What Outdated Tutorials & ChatGPT Recommend):**  
-   ${topRecord.legacyClaim}  
-   🔗 [View Legacy Source](${topRecord.legacySourceUrl})
-
-\`\`\`css
-${topRecord.legacyCode}
-\`\`\`
-
-2. **📘 Modern v4 Canonical Standard (What Current Docs & Oxide Engine Enforce):**  
-   ${topRecord.currentClaim}  
-   🔗 [View Official Modern Source](${topRecord.currentSourceUrl})
-
-\`\`\`css
-${topRecord.currentCode}
-\`\`\`
-
----
-
-#### 🚨 Why Keyword Search & Generic LLMs Get This Wrong:
-${topRecord.whyKeywordSearchFails}
-
----
-
-#### 🛠️ Compiler Failure When Using Old Syntax:
-\`\`\`text
-${topRecord.compilerError}
-\`\`\`
-
----
-
-#### ⚡ Canonical Migration Diff (- Legacy v3 / + Modern v4):
-\`\`\`diff
-${topRecord.migrationDiff}
-\`\`\`
-`
-    } else {
-      agentResponseText = `I queried the **Sanity Context Knowledge Base**, but could not find a verified version drift conflict directly matching *"${message}"*.
-
-### 🔍 Try asking one of these common breaking change questions:
-1. **"Tailwind mein @apply ab bhi chalta hai kya?"** (Does @apply still work in Tailwind v4?)
-2. **"Where is tailwind.config.js in Tailwind v4 and how do I configure content paths?"**
-3. **"Why is @tailwind base; @tailwind components; failing in my stylesheet?"**
-4. **"How do I install plugins like @tailwindcss/typography in Tailwind v4?"**
-5. **"How to configure class-based dark mode in Tailwind v4?"**
-6. **"React Router v7: Is react-router-dom deprecated?"**
-7. **"Next.js 15: Why is cookies() or params throwing a Promise warning?"**
-`
+    if (arbiterResult.errataOverride) {
+      citations.push({
+        label: `🚨 Tournament Errata: ${arbiterResult.errataOverride.patchVersion} (${arbiterResult.errataOverride.governingAuthority})`,
+        url: arbiterResult.errataOverride.sourceUrl,
+        category: 'Authoritative Errata Override',
+      })
     }
 
+    const agentResponseText = `### ⚖️ TableTop Arbiter — Tournament Rules Resolution
+
+**Target Game:** \`${arbiterResult.gameTitle}\`  
+**Verdict Winner:** **${arbiterResult.verdictWinner.toUpperCase()}**  
+**Cryptographic Stamp:** \`${arbiterResult.provenanceHash}\`
+
+---
+
+#### 🏛️ Official Ruling:
+${arbiterResult.officialRuling}
+
+---
+
+#### 📜 Base Rulebook:
+- **Code:** \`${arbiterResult.ruleCitation.sectionCode}\` (${arbiterResult.ruleCitation.title})
+- **Text:** "${arbiterResult.ruleCitation.originalText}"
+
+---
+
+#### 🚨 Active Tournament Errata:
+${
+  arbiterResult.errataOverride
+    ? `- **Patch:** \`${arbiterResult.errataOverride.patchVersion}\` (Effective: ${arbiterResult.errataOverride.effectiveDate})\n- **Authority:** ${arbiterResult.errataOverride.governingAuthority}\n- **Ruling:** "${arbiterResult.errataOverride.officialRulingText}"`
+    : 'No active errata override found; base printed rule applies.'
+}
+
+---
+
+#### ❌ Why Vector RAG Hallucinates:
+${arbiterResult.whyVectorSearchFailed}`
+
     return NextResponse.json({
-      text: agentResponseText,
-      toolUsed: 'drift_detect_version_conflict',
-      verifiedBySanity: topRecord ? topRecord.verifiedBySanity : true,
+      success: true,
+      query: message,
+      answer: agentResponseText,
+      verdictWinner: arbiterResult.verdictWinner,
       citations,
-      matchedCount: driftResult.allMatches.length,
-      sourcesCount: sources.length,
-      topRecord,
-      hasDrift: driftResult.hasDrift,
+      matchedRulesCount: knowledgeLake.matchedRules.length,
+      activeErrataCount: knowledgeLake.activeErrata.length,
+      provenanceHash: arbiterResult.provenanceHash,
+      timestamp: new Date().toISOString(),
     })
   } catch (err: unknown) {
-    console.error('Drift Chat API Error:', err)
-    const message = err instanceof Error ? err.message : 'Unknown error during agent chat'
+    const message = err instanceof Error ? err.message : 'Arbiter agent chat error'
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }

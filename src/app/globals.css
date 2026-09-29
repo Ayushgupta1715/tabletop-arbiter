@@ -1,87 +1,369 @@
 @import "tailwindcss";
 
 :root {
-  --background: #070b14;
-  --foreground: #f8fafc;
-  --color-cyan-glow: rgba(6, 182, 212, 0.35);
-  --color-emerald-glow: rgba(16, 185, 129, 0.35);
-  --color-indigo-glow: rgba(99, 102, 241, 0.35);
+  --felt-0: #061109;      /* page canvas — deep obsidian forest baize */
+  --felt-1: #0e2014;      /* panel surface — rich emerald malachite baize */
+  --felt-2: #16321f;      /* raised surface — illuminated championship felt */
+  --felt-surface: #1e4229;/* elevated active highlight */
+  --border: #24492e;      /* refined antique bronze-green hairline */
+  --border-subtle: #183621;
+  --brass: #e0ac42;       /* primary accent — radiant ormolu brass & gold foil */
+  --brass-light: #fde8a7; /* 24K specular gold leaf sheen */
+  --brass-dim: #9a7628;   /* burnished coin patina border */
+  --parchment: #f6f0e2;   /* primary text — vintage library cotton vellum */
+  --parchment-bright: #fffdf7; /* high-contrast illuminated headings */
+  --muted: #9bb897;       /* secondary text — mineral sage-silver */
+  --superseded: #d05a38;  /* solitary contrast — Venetian terracotta wax seal */
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-felt-0: var(--felt-0);
+  --color-felt-1: var(--felt-1);
+  --color-felt-2: var(--felt-2);
+  --color-felt-surface: var(--felt-surface);
+  --color-border: var(--border);
+  --color-brass: var(--brass);
+  --color-brass-light: var(--brass-light);
+  --color-brass-dim: var(--brass-dim);
+  --color-parchment: var(--parchment);
+  --color-parchment-bright: var(--parchment-bright);
+  --color-muted: var(--muted);
+  --color-superseded: var(--superseded);
+  --font-serif: var(--font-fraunces), Georgia, serif;
+  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-ibm-plex-mono), Menlo, monospace;
 }
 
 html, body {
-  background-color: #070b14;
-  color: #f8fafc;
+  background-color: var(--felt-0);
+  color: var(--parchment);
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+  min-height: 100%;
   overflow-x: hidden;
-  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
-  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-/* Cosmic Luminous Grid Background with Developer Tooling Palette */
-.bg-cosmic-grid {
-  background-color: #070b14;
+/* Luxurious atmospheric gaming table ambient lighting with warm overhead lamp */
+.felt-table-ambient {
+  background-color: var(--felt-0);
   background-image: 
-    radial-gradient(circle at 50% 0%, rgba(6, 182, 212, 0.14) 0%, transparent 50%),
-    radial-gradient(circle at 100% 30%, rgba(99, 102, 241, 0.12) 0%, transparent 45%),
-    radial-gradient(circle at 0% 60%, rgba(16, 185, 129, 0.10) 0%, transparent 45%),
-    radial-gradient(circle at 80% 90%, rgba(244, 63, 94, 0.08) 0%, transparent 40%),
-    linear-gradient(to right, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
-  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 48px 48px, 48px 48px;
+    radial-gradient(ellipse 1100px 580px at 50% -40px, rgba(224, 172, 66, 0.20) 0%, rgba(22, 50, 31, 0.65) 45%, transparent 85%),
+    radial-gradient(circle 950px at 50% 300px, rgba(28, 62, 38, 0.45) 0%, transparent 80%),
+    radial-gradient(circle 850px at 98% 85%, rgba(14, 32, 20, 0.85) 0%, transparent 75%),
+    radial-gradient(circle 750px at 2% 45%, rgba(12, 28, 18, 0.75) 0%, transparent 70%);
 }
 
-/* Luxury 3D Glass Slab */
-.glass-slab-3d {
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(3, 7, 18, 0.92) 100%);
-  backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+/* Gilded ormolu brass foil gradient text */
+.text-brass-foil {
+  background: linear-gradient(135deg, #fde8a7 0%, #e0ac42 50%, #aa8024 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* 3D Physical Plaque — multi-layered slab extrusion giving real depth */
+.plaque-3d {
+  background-color: var(--felt-1);
+  border: 1px solid var(--border);
   box-shadow: 
-    0 25px 50px -12px rgba(0, 0, 0, 0.85),
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.2),
-    inset 0 -1px 1px 0 rgba(0, 0, 0, 0.5);
-  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    inset 0 1px 0 0 rgba(253, 232, 167, 0.15),
+    0 1px 0 0 #142a1a,
+    0 2px 0 0 #102114,
+    0 3px 0 0 #0c1a10,
+    0 4px 0 0 #07120a,
+    0 14px 30px -6px rgba(0, 0, 0, 0.8),
+    0 26px 54px -12px rgba(0, 0, 0, 0.9);
+  transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s cubic-bezier(0.2, 0, 0, 1);
 }
 
-.glass-slab-3d:hover {
-  transform: translateY(-4px) scale(1.005);
-  border-color: rgba(255, 255, 255, 0.25);
+.plaque-3d:hover {
+  transform: translateY(-2px);
   box-shadow: 
-    0 35px 60px -15px rgba(0, 0, 0, 0.95),
-    inset 0 1px 2px 0 rgba(255, 255, 255, 0.35);
+    inset 0 1px 0 0 rgba(253, 232, 167, 0.25),
+    0 1px 0 0 #1a3622,
+    0 2px 0 0 #142b1a,
+    0 3px 0 0 #0f2014,
+    0 5px 0 0 #08130b,
+    0 18px 38px -8px rgba(0, 0, 0, 0.85),
+    0 32px 64px -14px rgba(0, 0, 0, 0.95);
 }
 
-/* Custom Scrollbar */
+/* 3D Active Gilded Plaque (Head Judge Decree Hero) */
+.plaque-3d-active {
+  background: linear-gradient(180deg, #132b1a 0%, #0d1e12 100%);
+  border: 1px solid var(--brass-dim);
+  box-shadow: 
+    inset 0 1px 0 0 rgba(253, 232, 167, 0.45),
+    inset 0 0 25px 0 rgba(224, 172, 66, 0.08),
+    0 1px 0 0 #e0ac42,
+    0 2px 0 0 #9a7628,
+    0 3px 0 0 #684f18,
+    0 4px 0 0 #24492e,
+    0 5px 0 0 #0e1d12,
+    0 20px 45px -10px rgba(0, 0, 0, 0.9),
+    0 36px 75px -18px rgba(0, 0, 0, 0.98),
+    0 0 40px -5px rgba(224, 172, 66, 0.22);
+}
+
+/* 3D Tactile Buttons — physical click depress */
+.btn-3d-brass {
+  background: linear-gradient(180deg, #f5c95c 0%, #d89f33 100%);
+  color: #061109;
+  font-weight: 700;
+  border: 1px solid #fde8a7;
+  box-shadow: 
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.55),
+    0 1px 0 0 #9a7628,
+    0 2px 0 0 #785a1a,
+    0 3px 0 0 #543e10,
+    0 8px 18px -2px rgba(0, 0, 0, 0.65);
+  transform: translateY(0);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.btn-3d-brass:hover {
+  background: linear-gradient(180deg, #fcd66e 0%, #e2ab3d 100%);
+  transform: translateY(-1px);
+  box-shadow: 
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.65),
+    0 1px 0 0 #9a7628,
+    0 3px 0 0 #785a1a,
+    0 4px 0 0 #543e10,
+    0 14px 22px -3px rgba(0, 0, 0, 0.75);
+}
+
+.btn-3d-brass:active {
+  transform: translateY(3px);
+  box-shadow: 
+    inset 0 1px 0 0 rgba(0, 0, 0, 0.25),
+    0 0 0 0 #543e10,
+    0 2px 6px rgba(0, 0, 0, 0.75);
+}
+
+.btn-3d-surface {
+  background: linear-gradient(180deg, #183722 0%, #102416 100%);
+  border: 1px solid var(--border);
+  color: var(--parchment);
+  box-shadow: 
+    inset 0 1px 0 0 rgba(253, 232, 167, 0.12),
+    0 1px 0 0 #0d1e12,
+    0 2px 0 0 #07120a,
+    0 7px 14px -2px rgba(0, 0, 0, 0.6);
+  transform: translateY(0);
+  transition: transform 0.1s ease, box-shadow 0.1s ease, border-color 0.15s ease;
+}
+
+.btn-3d-surface:hover {
+  border-color: var(--brass-dim);
+  color: var(--brass-light);
+  transform: translateY(-1px);
+  box-shadow: 
+    inset 0 1px 0 0 rgba(253, 232, 167, 0.25),
+    0 1px 0 0 #183722,
+    0 3px 0 0 #0d1e12,
+    0 12px 20px -3px rgba(0, 0, 0, 0.7);
+}
+
+.btn-3d-surface:active {
+  transform: translateY(2px);
+  box-shadow: 
+    0 0 0 0 #07120a,
+    0 2px 5px rgba(0, 0, 0, 0.7);
+}
+
+/* 3D Sunken Felt Dice Tray */
+.dice-tray-3d {
+  background: radial-gradient(circle at 50% 50%, #0d2215 0%, #061109 100%);
+  border: 2px solid #2d5537;
+  box-shadow: 
+    inset 0 4px 16px 3px rgba(0, 0, 0, 0.85),
+    inset 0 1px 1px 0 rgba(0, 0, 0, 0.95),
+    0 1px 0 0 rgba(253, 232, 167, 0.2),
+    0 10px 28px -4px rgba(0, 0, 0, 0.75);
+  position: relative;
+}
+
+/* 3D Metallic Corner Brackets (for physical docket look) */
+.corner-bracket-tl {
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  width: 15px;
+  height: 15px;
+  border-top: 2px solid var(--brass);
+  border-left: 2px solid var(--brass);
+  pointer-events: none;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.9));
+}
+.corner-bracket-tr {
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: 15px;
+  height: 15px;
+  border-top: 2px solid var(--brass);
+  border-right: 2px solid var(--brass);
+  pointer-events: none;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.9));
+}
+.corner-bracket-bl {
+  position: absolute;
+  bottom: -1px;
+  left: -1px;
+  width: 15px;
+  height: 15px;
+  border-bottom: 2px solid var(--brass);
+  border-left: 2px solid var(--brass);
+  pointer-events: none;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.9));
+}
+.corner-bracket-br {
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 15px;
+  height: 15px;
+  border-bottom: 2px solid var(--brass);
+  border-right: 2px solid var(--brass);
+  pointer-events: none;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.9));
+}
+
+/* 3D Tournament Adjudication Seals */
+.seal-upheld-3d {
+  background: radial-gradient(circle at 35% 35%, #ffe694 0%, #e0ac42 55%, #8f691d 100%);
+  color: #061109;
+  box-shadow: 
+    0 1px 0 0 #5e4411,
+    0 2px 5px rgba(0, 0, 0, 0.65),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 -1px 2px 0 rgba(0, 0, 0, 0.45);
+}
+
+.seal-overruled-3d {
+  background: radial-gradient(circle at 35% 35%, #eb714f 0%, #d05a38 55%, #732b17 100%);
+  color: #ffffff;
+  box-shadow: 
+    0 1px 0 0 #4f1d0f,
+    0 2px 5px rgba(0, 0, 0, 0.65),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 2px 0 rgba(0, 0, 0, 0.55);
+}
+
+/* Docket cards with authentic bookbinding depth */
+.border-docket {
+  border: 1px solid var(--border);
+  box-shadow: 
+    inset 0 1px 0 0 rgba(212, 167, 72, 0.08),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.02),
+    0 14px 32px -10px rgba(0, 0, 0, 0.75);
+}
+
+.border-docket-active {
+  border: 1px solid var(--brass-dim);
+  box-shadow: 
+    inset 0 1px 0 0 rgba(245, 217, 142, 0.25),
+    inset 0 0 0 1px rgba(212, 167, 72, 0.12),
+    0 18px 40px -12px rgba(0, 0, 0, 0.85),
+    0 0 30px -8px rgba(212, 167, 72, 0.12);
+}
+
+/* Brass hairline rule with metallic gleam */
+.brass-hairline {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--border) 15%,
+    var(--brass-dim) 40%,
+    var(--brass-light) 50%,
+    var(--brass-dim) 60%,
+    var(--border) 85%,
+    transparent 100%
+  );
+  height: 1px;
+}
+
+/* Custom Scrollbar styled for felt table feel */
 ::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #070b14;
+  background: var(--felt-0);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(to bottom, #06b6d4, #6366f1);
+  background: #243c2a;
   border-radius: 9999px;
-  border: 1px solid #070b14;
+  border: 1px solid #142418;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(to bottom, #22d3ee, #818cf8);
+  background: var(--brass-dim);
 }
 
-/* Animations */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+::selection {
+  background-color: var(--brass);
+  color: var(--felt-0);
 }
 
-.animate-fadeIn {
-  animation: fadeIn 0.3s ease-out forwards;
+/* Citation Chip Component - Small mono pill with gold brass border */
+.citation-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 6px;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--brass-light);
+  background: rgba(224, 172, 66, 0.10);
+  border: 1px solid var(--brass-dim);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  white-space: nowrap;
+}
+
+/* Eyebrow Label: Restrained mono tag strictly for codes & metadata */
+.eyebrow-label {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Official Ruling Stamp Animation */
+@keyframes stampDrop {
+  0% {
+    opacity: 0;
+    transform: scale(1.6) translateY(-4px);
+    filter: blur(2px);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(0.97) translateY(1px);
+    filter: blur(0px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-stamp {
+  animation: stampDrop 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: center center;
+}
+
+/* Pulse shimmer for typing / reasoning */
+@keyframes softPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.animate-soft-pulse {
+  animation: softPulse 2s ease-in-out infinite;
 }

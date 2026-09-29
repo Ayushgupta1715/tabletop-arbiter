@@ -1,8 +1,9 @@
 import { type SchemaTypeDefinition } from 'sanity'
-import { libraryProfileType } from './libraryProfile'
-import { versionDriftRecordType } from './versionDriftRecord'
-import { knowledgeSourceType } from './knowledgeSource'
+import { gameType } from './game'
+import { gameRuleType } from './gameRule'
+import { ruleErrataType } from './ruleErrata'
+import { disputedScenarioType } from './disputedScenario'
 
 export const schema: { types: SchemaTypeDefinition[] } = {
-  types: [libraryProfileType, versionDriftRecordType, knowledgeSourceType],
+  types: [gameType, gameRuleType, ruleErrataType, disputedScenarioType],
 }

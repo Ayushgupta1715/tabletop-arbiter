@@ -1,136 +1,88 @@
-# 🛡️ TruthLens AI — Multimodal Deepfake & Fake News Forensic Intelligence Platform
+# ⚖️ TableTop Arbiter — Official Tournament Rules & Errata Grounded Copilot
 
-> **An autonomous multimodal forensic sentinel engineered to detect AI deepfakes, synthetic media generation, neural voice clones, and viral disinformation campaigns with explainable evidentiary chain-of-custody.**
+> **An autonomous tabletop tournament rules arbiter powered by Sanity’s Structured Content Lake and Model Context Protocol (MCP). Eliminating LLM hallucinations on competitive board game and trading card game errata.**
 
----
-
-## ⚡ The Challenge & Problem Statement
-
-Modern disinformation is no longer limited to simple misleading text:
-- **Audio Voice Clones:** Synthetic zero-shot voice cloning (ElevenLabs, VALL-E) impersonating executives, public officials, and emergency callers.
-- **Photorealistic Generative Images:** Diffusion models (Midjourney v6, FLUX.1) producing realistic crisis photos with subtle anatomical and lighting flaws.
-- **CGI Military Re-Purposing & Video Deepfakes:** Video game simulations (ARMA 3, DCS) passed off as live war combat footage, and AI facial replacement clips.
-- **Viral Panic Vectors:** Chain-letter forwards and fabricated regulatory bulletins engineered with urgency hooks to bypass human critical evaluation.
-
-Traditional fact-checking organizations take **hours or days** to debunk viral claims. By that time, disinformation has already reached millions. **TruthLens AI** bridges this critical gap with real-time, explainable, multimodal forensic inspection.
+[![DEV Challenge](https://img.shields.io/badge/DEV%20Challenge-Sanity.io%20Path%20One-amber?style=for-the-badge)](https://dev.to/challenges/sanity-2026-09-16)
+[![Sanity MCP](https://img.shields.io/badge/Sanity%20Context-MCP%20JSON--RPC-blue?style=for-the-badge)](https://sanity.io)
+[![Next.js](https://img.shields.io/badge/Next.js-16.3-black?style=for-the-badge)](https://nextjs.org)
 
 ---
 
-## 🚀 Key Capabilities & Architecture
+## ⚡ The Challenge & Core Thesis
+
+In competitive tabletop gaming (Magic: The Gathering, Warhammer 40k, Catan, Gloomhaven, Dungeons & Dragons), rules arguments stall tournaments and break game nights. When players consult traditional AI assistants (ChatGPT, Claude), **generic LLMs routinely hallucinate** because they rely on keyword similarity across thousands of conflicting online forums and outdated rulebooks.
+
+### Why Vector RAG Fails vs Why Sanity Succeeds:
+- **Vector RAG Blindness:** RAG splits text into arbitrary chunks. It cannot tell whether an old 2021 printed rule is officially superseded by a 2024 Balance Dataslate or a Head Judge FAQ update.
+- **Sanity Structured Knowledge Lake:** Rules are represented as an interconnected graph. The `ruleErrata` schema contains a `supersedesRules[]` reference to the base `gameRule`.
+- **Atomic GROQ Dereferencing:** A single GROQ query (`*[_type == "ruleErrata" && references($ruleId)]`) traverses the graph, guaranteeing that the AI agent prioritizes official tournament overrides.
+
+---
+
+## 🏗️ Architecture & Data Flow
 
 ```mermaid
 flowchart TD
-    A["Raw Input Asset"] --> B{"Modality Classifier"}
+    User["Player Table Dispute / Query"] --> Hub{"TableTop Arbiter Engine"}
     
-    B -->|"Text / Claims"| C["NLP Deception & Sensationalism Analysis"]
-    B -->|"Image / Photo"| D["Client Canvas Error Level Analysis (ELA)"]
-    B -->|"Audio / Speech"| E["Acoustic Spectrogram & 16kHz Cutoff Detection"]
-    B -->|"Video / Footage"| F["Temporal Flow & Landmark Jitter Engine"]
+    Hub --> GROQ["Sanity Content Lake\n(GROQ Graph Dereferencing)"]
+    GROQ --> Schema1["Game Document\n(MTG, 40k, Catan, Gloomhaven, D&D)"]
+    GROQ --> Schema2["Base GameRule\n(CR 702.21a, Sec 4.1, etc.)"]
+    GROQ --> Schema3["Tournament RuleErrata\n(supersedesRules -> GameRule)"]
     
-    C --> G["Dual-Core Forensic Pipeline"]
-    D --> G
-    E --> G
-    F --> G
+    Schema2 --> Join["Graph Relational Join\n(Hierarchical Priority Resolution)"]
+    Schema3 --> Join
     
-    G --> H["Core 1: Local Deterministic Kernel\n(Canvas ELA + FFT + Heuristics)"]
-    G --> I["Core 2: Live Gemini 2.0 Flash\n(Multimodal Semantic Reasoning)"]
+    Join --> MCP["Sanity Context MCP Server\n(/api/sanity/mcp)"]
+    MCP --> Copilot["Dual-Engine Arbiter\n(Local Deterministic + Gemini 2.0 Flash)"]
     
-    H --> J["IFCN Fact-Checking Registry Corroboration\n(Reuters, AP, Snopes, Poynter)"]
-    I --> J
-    
-    J --> K["Forensic Ruling & Authenticity Score (0-100%)"]
-    K --> L["Cryptographic SHA-256 Audit Certificate\n(Immutable Chain of Custody)"]
+    Copilot --> Verdict["Authoritative Tabletop Ruling"]
+    Verdict --> Slip["Cryptographic Official Ruling Slip\n(SHA-256 Provenance)"]
 ```
 
-### 1. 📰 Text & Claim Deception Forensics
-- **Orthographic & Punctuation Pressure:** Analyzes uppercase shouting ratios and punctuation urgency.
-- **Emotional Manipulation Hooks:** Detects panic-inducing triggers (`FORWARD IMMEDIATELY`, `BEFORE IT'S DELETED`).
-- **Claim Extraction & Wire Corroboration:** Cross-references assertions against verified International Fact-Checking Network (IFCN) signatories (Reuters Fact Check, Associated Press, Snopes, Poynter).
+---
 
-### 2. 🖼️ Browser-Based Error Level Analysis (ELA) for Images
-- **Real Client-Side Canvas Computation:** Draws the image to an HTML5 canvas, re-compresses to a calibrated JPEG baseline (75%), and calculates absolute differential pixel errors.
-- **Synthetic Infill & Splicing Alerts:** Highlights areas with irregular compression rates (e.g., pasted faces, generative fills, or modified text).
-- **Interactive Controls:** Dynamic slider for Error Scale Amplification (5x–40x) and re-compression quality.
+## 🌟 Key Features
 
-### 3. 🎙️ Acoustic Spectrogram & Voice Clone Detection
-- **16.0 kHz Neural Vocoder Cutoff:** Detects tell-tale brickwall frequency cutoffs characteristic of neural voice synthesis models.
-- **Biological Glottal Invariance:** Flags audio lacking organic sub-glottal breathing pauses and natural fundamental frequency ($F_0$) micro-tremor.
-
-### 4. 🎥 Video Frame & Temporal Inconsistency Scrubber
-- **Frame-by-Frame Inspector:** Extracts discrete frame telemetry (30fps) to detect facial boundary jitter, pupil reflection discrepancies, and optical flow mismatches.
-- **Blink Cadence Meter:** Identifies abnormal eye-blink timing common in synthetic video generation.
-
-### 5. 📜 Cryptographic SHA-256 Forensic Audit Certificate
-- Generates an immutable, printable, and downloadable **JSON/PDF Forensic Audit Dossier** with:
-  - Cryptographic media hash
-  - UTC ISO timestamp
-  - Block verification ID
-  - Breakdown of detected manipulation signatures
-
-### 6. 🌐 Live Global Disinformation Threat Radar
-- Live ticker and threat index tracking active viral deepfake campaigns across world regions (Financial CEO voice scams, military CGI clips, election misinformation).
-
-### 7. 🤖 TruthLens AI Forensic Copilot
-- Conversational chat assistant to guide journalists, investigators, and citizens through forensic findings, evidence interpretation, and debunking techniques.
+1. **⚔️ Dispute Benchmark Arena:** 5 pre-calibrated championship-level disputes showing side-by-side contrast between naive vector RAG hallucinations and grounded Sanity verdicts.
+2. **🤖 Interactive Arbiter AI Copilot:** Natural-language chat evaluating custom table disputes with live GROQ grounding and step-by-step table remedy instructions.
+3. **📜 Official Ruling Slip Modal:** Printable/copyable tournament judge sheet with SHA-256 verification hash to settle arguments at the table.
+4. **🛰️ Production MCP Endpoint (`/api/sanity/mcp`):** Standards-compliant Model Context Protocol server exposing `resolve_tabletop_dispute`, `get_rule_errata_diff`, and `query_tournament_knowledge_lake`.
+5. **🎛️ Sanity Studio Integration (`/studio`):** Full embedded Sanity Studio to manage games, base rules, errata patches, and benchmark dispute records.
 
 ---
 
-## ⚡ Ground-Truth Benchmark Cases (Included)
+## 🚀 Getting Started
 
-The platform comes pre-loaded with **5 calibrated real-world case studies** accessible via one-click chips:
-1. 🎥 **Viral War Combat Footage:** Video game (ARMA 3) gameplay passed off as live air-defense missile interception.
-2. 🎙️ **Leaked CEO Audio:** AI voice clone declaring insolvency before Monday market open.
-3. 🖼️ **Synthetic Protest Photo:** Midjourney v6 generated crowd image with anomalous anatomy and lighting.
-4. 📰 **Fabricated WHO Bulletin:** Viral WhatsApp forward with simulated UN headers claiming tap water contamination.
-5. 🔭 **NASA Exoplanet Discovery (Control Benchmark):** Verified authentic scientific reporting from Nature / NASA James Webb Space Telescope.
+### Prerequisites
+- Node.js 18+ (tested on Node.js 20 & 22)
+- npm or pnpm
 
----
-
-## 🛠️ Tech Stack
-
-- **Framework:** Next.js 16.3.5 (Turbopack, App Router)
-- **UI & Components:** React 19, Tailwind CSS v4, Lucide Icons, Glassmorphism 3D styling
-- **AI Engine:** Dual-Engine Architecture:
-  - **Local Forensic Engine:** Real-time client canvas ELA, acoustic frequency analysis, and lexical disinformation heuristics (works 100% offline & out-of-the-box).
-  - **Live Gemini Engine:** Google Gemini 2.0 Flash via REST API for deep multimodal semantic fact-checking and conversational copilot.
-- **Verification Standards:** Aligned with C2PA Content Credentials & IFCN Fact-Checking protocols.
-
----
-
-## 🏁 Getting Started
-
-### 1. Installation
+### Installation & Run
 
 ```bash
-git clone <repo-url>
-cd "hackathon 1"
+# 1. Install dependencies
 npm install
-```
 
-### 2. Run the Development Server
-
-```bash
+# 2. Run the development server
 npm run dev
+
+# 3. Open in browser:
+# App: http://localhost:3000
+# Sanity Studio: http://localhost:3000/studio
+# MCP Server: http://localhost:3000/api/sanity/mcp
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+### Environment Variables (Optional)
+The project runs 100% out of the box with built-in high-fidelity seed data. To connect your live Sanity project or Google Gemini key, create a `.env.local`:
 
-### 3. Production Build & Verification
-
-```bash
-npm run build
-npm run start
+```env
+NEXT_PUBLIC_SANITY_PROJECT_ID=your_sanity_project_id
+NEXT_PUBLIC_SANITY_DATASET=production
+GEMINI_API_KEY=your_gemini_api_key
 ```
-
-### 4. Optional: Enable Live Gemini 2.0 Flash AI
-You can use the platform immediately with the built-in Local Forensic Engine. To enable live multimodal Gemini analysis:
-- Click the **"AI Engine"** button in the header and paste your free [Google AI Studio API Key](https://aistudio.google.com/app/apikey).
-- Or add `GEMINI_API_KEY=your_key` to `.env.local`.
 
 ---
 
-## 🛡️ Hackathon Submission Details
-
-- **Project:** TruthLens AI
-- **Category:** AI Fake News & Deepfake Detection Platform
-- **Key Highlights:** Multimodal coverage (Text, Image, Audio, Video), Real browser-based Error Level Analysis (ELA), Spectrogram 16kHz cutoff visualization, IFCN wire consensus, and Cryptographic SHA-256 Audit Certificates.
+## ⚖️ License
+MIT License. Built for the **DEV Community x Sanity Challenge 2026**.

@@ -9,11 +9,11 @@ export default defineConfig({
   basePath: '/studio',
   projectId,
   dataset,
-  title: 'ImmiGuard AI — Indian Tech Visa & Immigration Knowledge Hub',
+  title: 'TableTop Arbiter — Official Rules & Tournament Errata Lake',
   schema,
   plugins: [
     structureTool({
-      title: 'Immigration Contradiction Lake',
+      title: 'Tournament Rules Studio',
     }),
   ],
 })

@@ -1,11 +1,9 @@
 import { NextResponse } from 'next/server'
 import {
-  detectVersionDrift,
-  queryDriftKnowledgeBase,
-  getMigrationDiff,
-  recordDecision,
-  inspectKnowledgeSources,
-  fetchLibraries,
+  resolveTabletopDispute,
+  getRuleErrataDiff,
+  queryTournamentKnowledgeLake,
+  fetchSupportedGames,
 } from '@/lib/mcp/sanityContext'
 
 // Returns MCP manifest & tools metadata
@@ -13,10 +11,10 @@ export async function GET() {
   return NextResponse.json({
     mcpVersion: '1.0',
     server: {
-      name: 'sanity-context-version-drift-mcp',
+      name: 'sanity-context-tabletop-arbiter-mcp',
       version: '1.0.0',
       description:
-        'Sanity Context MCP Server for Version-Drift Detection & Breaking Change Reconciliation. Resolves contradictions between v3 legacy tutorials and v4 modern canonical documentation for fast-moving developer libraries (Tailwind CSS, React Router, Next.js).',
+        'Sanity Context MCP Server for TableTop Arbiter. Deterministic rules resolution and errata overrides for competitive tabletop games & TCGs (Magic: The Gathering, Warhammer 40k, Catan, Gloomhaven, D&D). Queries Sanity Content Lake using GROQ dereferencing to prevent LLM hallucinations.',
     },
     capabilities: {
       tools: true,
@@ -25,120 +23,172 @@ export async function GET() {
     },
     tools: [
       {
-        name: 'drift_detect_version_conflict',
+        name: 'resolve_tabletop_dispute',
         description:
-          'Evaluates a developer question or code snippet against the Sanity Knowledge Base to detect breaking version drift, surface side-by-side legacy vs modern claims, and explain why keyword search fails.',
+          'Evaluates a tabletop game rule argument between players by querying Sanity structured core rules and overriding official tournament errata.',
         parameters: {
           type: 'object',
           properties: {
-            query: { type: 'string', description: 'Developer question, e.g. "Tailwind mein @apply ab bhi chalta hai kya?"' },
-            codeSnippet: { type: 'string', description: 'Optional code snippet to analyze for deprecated or broken syntax' },
-            library: { type: 'string', description: 'Optional library filter (e.g. "Tailwind CSS")' },
+            scenarioQuery: { type: 'string', description: 'Description of the dispute or card interaction occurring at the table' },
+            gameFilter: { type: 'string', description: 'Game name or ID (e.g. "Magic: The Gathering", "Warhammer 40,000", "Catan")' },
+            playerAClaim: { type: 'string', description: 'Optional argument made by Player A' },
+            playerBClaim: { type: 'string', description: 'Optional argument made by Player B' },
+            disputeId: { type: 'string', description: 'Optional pre-calibrated dispute ID' },
+          },
+          required: ['scenarioQuery'],
+        },
+      },
+      {
+        name: 'get_rule_errata_diff',
+        description:
+          'Fetches the base printed rule and any overriding tournament errata documents that reference and supersede it.',
+        parameters: {
+          type: 'object',
+          properties: {
+            ruleId: { type: 'string', description: 'The unique ID of the base game rule' },
+          },
+          required: ['ruleId'],
+        },
+      },
+      {
+        name: 'query_tournament_knowledge_lake',
+        description:
+          'Queries Sanity Content Lake for rules, official FAQ rulings, and tournament errata using GROQ structured traversal.',
+        parameters: {
+          type: 'object',
+          properties: {
+            query: { type: 'string', description: 'Keywords or rules section code (e.g. "CR 702.21a", "Deep Strike 9 inches")' },
+            gameFilter: { type: 'string', description: 'Optional target game name' },
           },
           required: ['query'],
         },
       },
       {
-        name: 'drift_query_knowledge_base',
-        description:
-          'Queries Sanity for multi-source contradiction records citing official modern docs, migration guides, legacy archives, and outdated tutorials.',
-        parameters: {
-          type: 'object',
-          properties: {
-            query: { type: 'string', description: 'Search term or question regarding syntax changes' },
-            library: { type: 'string', description: 'Optional library filter' },
-          },
-          required: ['query'],
-        },
-      },
-      {
-        name: 'drift_get_migration_diff',
-        description:
-          'Generates a precise line-by-line migration diff (- legacy v3 / + modern v4) for a specific breaking change.',
-        parameters: {
-          type: 'object',
-          properties: {
-            driftId: { type: 'string', description: 'The unique ID of the version drift record' },
-          },
-          required: ['driftId'],
-        },
-      },
-      {
-        name: 'drift_record_decision',
-        description:
-          'Records and persists an architectural decision ("v4 current, v3 legacy") into MCP memory so downstream agents build with that assumption.',
-        parameters: {
-          type: 'object',
-          properties: {
-            driftId: { type: 'string', description: 'Target version drift ID' },
-            decision: { type: 'string', description: 'Resolution statement' },
-            status: { type: 'string', enum: ['enforced_modern', 'legacy_fallback', 'migration_progress'] },
-          },
-          required: ['driftId', 'decision'],
-        },
-      },
-      {
-        name: 'drift_inspect_sources',
-        description:
-          'Inspects the 125+ ingested Sanity knowledge sources across official docs, migration guides, GitHub releases, and outdated tutorials.',
-        parameters: {
-          type: 'object',
-          properties: {
-            library: { type: 'string' },
-            freshness: { type: 'string', enum: ['all', 'canonical_current', 'deprecated_legacy', 'outdated_pitfall'] },
-            search: { type: 'string' },
-          },
-        },
-      },
-      {
-        name: 'drift_fetch_libraries',
-        description: 'Returns supported library profiles (Tailwind CSS, React Router, Next.js).',
+        name: 'fetch_supported_games',
+        description: 'Returns the catalog of supported tabletop games and their governing tournament circuits.',
         parameters: { type: 'object', properties: {} },
       },
     ],
   })
 }
 
-// Executes an MCP tool call via JSON-RPC / MCP standard
+// Executes an MCP tool call (JSON-RPC / REST format)
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { tool, params } = body
+    const { tool, params, method, id } = body
 
-    if (!tool) {
-      return NextResponse.json({ error: 'Missing "tool" name in MCP request' }, { status: 400 })
+    // Support standard MCP JSON-RPC 2.0 methods:
+    if (method === 'tools/list' || body.method === 'tools/list') {
+      const manifest = await (await GET()).json()
+      return NextResponse.json({
+        jsonrpc: '2.0',
+        id: id || 1,
+        result: {
+          tools: manifest.tools,
+        },
+      })
     }
 
-    switch (tool) {
-      case 'drift_detect_version_conflict': {
-        const res = await detectVersionDrift(params)
-        return NextResponse.json({ result: res })
-      }
-      case 'drift_query_knowledge_base': {
-        const res = await queryDriftKnowledgeBase(params)
-        return NextResponse.json({ result: res })
-      }
-      case 'drift_get_migration_diff': {
-        const res = await getMigrationDiff(params)
-        return NextResponse.json({ result: res })
-      }
-      case 'drift_record_decision': {
-        const res = await recordDecision(params)
-        return NextResponse.json({ result: res })
-      }
-      case 'drift_inspect_sources': {
-        const res = await inspectKnowledgeSources(params)
-        return NextResponse.json({ result: res })
-      }
-      case 'drift_fetch_libraries': {
-        const res = await fetchLibraries()
-        return NextResponse.json({ result: res })
-      }
+    if (method === 'initialize' || body.method === 'initialize') {
+      return NextResponse.json({
+        jsonrpc: '2.0',
+        id: id || 1,
+        result: {
+          protocolVersion: '2024-11-05',
+          serverInfo: {
+            name: 'sanity-context-tabletop-arbiter-mcp',
+            version: '1.0.0',
+          },
+          capabilities: {
+            tools: {},
+            resources: {},
+            prompts: {},
+          },
+        },
+      })
+    }
+
+    // Support standard JSON-RPC 2.0 or direct tool call
+    const toolName =
+      tool ||
+      body.name ||
+      body.params?.name ||
+      (method === 'tools/call' ? body.params?.name : null) ||
+      (typeof method === 'string' && method !== 'tools/call' ? method : null)
+    const toolParams =
+      params ||
+      body.arguments ||
+      body.params?.arguments ||
+      (method === 'tools/call' ? body.params?.arguments : {}) ||
+      {}
+
+    let result: unknown
+
+    switch (toolName) {
+      case 'resolve_tabletop_dispute':
+        result = await resolveTabletopDispute({
+          scenarioQuery: toolParams.scenarioQuery || toolParams.query || '',
+          gameFilter: toolParams.gameFilter || toolParams.game,
+          playerAClaim: toolParams.playerAClaim,
+          playerBClaim: toolParams.playerBClaim,
+          disputeId: toolParams.disputeId,
+        })
+        break
+
+      case 'get_rule_errata_diff':
+        result = await getRuleErrataDiff(toolParams.ruleId)
+        break
+
+      case 'query_tournament_knowledge_lake':
+        result = await queryTournamentKnowledgeLake({
+          query: toolParams.query || '',
+          gameFilter: toolParams.gameFilter,
+        })
+        break
+
+      case 'fetch_supported_games':
+        result = await fetchSupportedGames()
+        break
+
       default:
-        return NextResponse.json({ error: `Unknown tool: ${tool}` }, { status: 404 })
+        return NextResponse.json(
+          {
+            jsonrpc: '2.0',
+            id: id || null,
+            error: {
+              code: -32601,
+              message: `Method or tool not found: ${toolName}. Available tools: resolve_tabletop_dispute, get_rule_errata_diff, query_tournament_knowledge_lake, fetch_supported_games`,
+            },
+          },
+          { status: 404 }
+        )
     }
+
+    return NextResponse.json({
+      jsonrpc: '2.0',
+      id: id || 1,
+      result: {
+        content: [
+          {
+            type: 'text',
+            text: typeof result === 'string' ? result : JSON.stringify(result, null, 2),
+          },
+        ],
+        structuredData: result,
+      },
+    })
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'MCP execution failure'
-    return NextResponse.json({ error: message }, { status: 500 })
+    console.error('[Sanity TableTop Arbiter MCP Error]', err)
+    return NextResponse.json(
+      {
+        jsonrpc: '2.0',
+        error: {
+          code: -32000,
+          message: err instanceof Error ? err.message : 'Unknown internal MCP error',
+        },
+      },
+      { status: 500 }
+    )
   }
 }

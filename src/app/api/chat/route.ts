@@ -1,85 +1,186 @@
 import { NextRequest, NextResponse } from 'next/server'
+import {
+  queryTournamentKnowledgeLake,
+  getRuleErrataDiff,
+  resolveTabletopDispute,
+} from '@/lib/mcp/sanityContext'
+
+export interface ToolCallStep {
+  id: string
+  tool: string
+  arguments: Record<string, unknown>
+  outputSummary: string
+  durationMs: number
+  status: 'invoked' | 'success' | 'error'
+  timestamp: string
+}
 
 export async function POST(req: NextRequest) {
+  const startTime = Date.now()
   try {
-    const { messages, apiKey, forensicContext } = await req.json()
-    const lastUserMessage = messages[messages.length - 1]?.content || ''
+    const { messages, apiKey, gameFilter, disputeContext } = await req.json()
+    const lastUserMessage = messages?.[messages.length - 1]?.content || ''
+    const effectiveApiKey =
+      apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY
 
-    const effectiveApiKey = apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY
+    const toolTrace: ToolCallStep[] = []
 
-    // If Gemini key is available, use live LLM
+    // --- STEP 1: Call MCP Tool `query_tournament_knowledge_lake` ---
+    const t1Start = Date.now()
+    const knowledge = await queryTournamentKnowledgeLake({
+      query: lastUserMessage,
+      gameFilter: gameFilter || 'Magic: The Gathering',
+    })
+    toolTrace.push({
+      id: 'step-1-query-kb',
+      tool: 'query_tournament_knowledge_lake',
+      arguments: { query: lastUserMessage, gameFilter: gameFilter || 'Magic: The Gathering' },
+      outputSummary: `Matched ${knowledge.matchedRules.length} Comprehensive Rules clauses (${knowledge.matchedRules.map((r) => r.sectionCode).slice(0, 3).join(', ')}) & ${knowledge.activeErrata.length} active Oracle/tournament errata overrides.`,
+      durationMs: Date.now() - t1Start,
+      status: 'success',
+      timestamp: new Date().toISOString(),
+    })
+
+    // --- STEP 2: Call MCP Tool `get_rule_errata_diff` on top rule ---
+    const topRule = knowledge.matchedRules[0]
+    let diffResult: Awaited<ReturnType<typeof getRuleErrataDiff>> | null = null
+    if (topRule) {
+      const t2Start = Date.now()
+      diffResult = await getRuleErrataDiff(topRule.id)
+      toolTrace.push({
+        id: 'step-2-rule-diff',
+        tool: 'get_rule_errata_diff',
+        arguments: { ruleId: topRule.id, sectionCode: topRule.sectionCode },
+        outputSummary: diffResult.hasOverride
+          ? `CRITICAL OVERRIDE DETECTED: Base rule ${topRule.sectionCode} is superseded by "${diffResult.errata?.patchVersion}" (${diffResult.errata?.governingAuthority}).`
+          : `Base rule ${topRule.sectionCode} has no superseding errata. Base printed rule text stands.`,
+        durationMs: Date.now() - t2Start,
+        status: 'success',
+        timestamp: new Date().toISOString(),
+      })
+    }
+
+    // --- STEP 3: Call MCP Tool `resolve_tabletop_dispute` ---
+    const t3Start = Date.now()
+    const arbitration = await resolveTabletopDispute({
+      scenarioQuery: lastUserMessage,
+      gameFilter: gameFilter || 'Magic: The Gathering',
+      playerAClaim: disputeContext?.playerAClaim,
+      playerBClaim: disputeContext?.playerBClaim,
+    })
+    toolTrace.push({
+      id: 'step-3-resolve-dispute',
+      tool: 'resolve_tabletop_dispute',
+      arguments: {
+        scenarioQuery: lastUserMessage.slice(0, 80) + '...',
+        governingRuleId: topRule?.id,
+        governingErrataId: diffResult?.errata?.id,
+      },
+      outputSummary: `Verdict certified: ${arbitration.verdictWinner.toUpperCase()}. Lineage verified with hash ${arbitration.provenanceHash}.`,
+      durationMs: Date.now() - t3Start,
+      status: 'success',
+      timestamp: new Date().toISOString(),
+    })
+
+    // --- STEP 4: Dual-Stream Live Execution (Naive Baseline vs Grounded Arbiter) ---
+    let liveNaiveAnswer = ''
+    let liveGroundedAnswer = ''
+
     if (effectiveApiKey) {
+      // 4A: Call Naive Model with ZERO Knowledge Base Context
       try {
-        const systemPrompt = `You are TruthLens Copilot, an elite AI forensic investigator specializing in deepfakes, synthetic media generation, and fake news detection.
-Provide sharp, forensic, technically sound, and actionable explanations.
-Reference digital forensics techniques (ELA, spectral frequency cutoffs, facial landmark jitter, EXIF metadata, C2PA cryptographic provenance, source corroboration).
-If relevant, reference the current forensic context: ${JSON.stringify(forensicContext || {})}`
+        const naivePrompt = `You are a casual player answering a tabletop rules question from memory without checking any rulebook or tournament errata.
+Answer briefly (2-3 sentences) based on casual intuition and card keywords:
+Question: ${lastUserMessage}`
 
-        const contents = [
-          { role: 'user', parts: [{ text: `${systemPrompt}\n\nUser Question: ${lastUserMessage}` }] }
-        ]
-
-        const geminiRes = await fetch(
+        const naiveRes = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${effectiveApiKey}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents })
+            body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: naivePrompt }] }] }),
           }
         )
-
-        if (geminiRes.ok) {
-          const data = await geminiRes.json()
-          const answer = data.candidates?.[0]?.content?.parts?.[0]?.text
-          if (answer) {
-            return NextResponse.json({ reply: answer })
-          }
+        if (naiveRes.ok) {
+          const naiveData = await naiveRes.json()
+          liveNaiveAnswer =
+            naiveData.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || ''
         }
       } catch (err) {
-        console.warn('Gemini chat error, fallback to expert responder:', err)
+        console.warn('Naive LLM call failed:', err)
+      }
+
+      // 4B: Call Grounded Arbiter with Real Sanity MCP Context
+      try {
+        const groundedPrompt = `You are TableTop Arbiter, the official Head Tournament Judge.
+You have access to authoritative data from the Sanity Context Knowledge Base:
+- Matched Rules: ${JSON.stringify(knowledge.matchedRules.map((r) => ({ code: r.sectionCode, text: r.officialRawText })))}
+- Active Errata Overrides: ${JSON.stringify(knowledge.activeErrata.map((e) => ({ version: e.patchVersion, ruling: e.officialRulingText, authority: e.governingAuthority })))}
+- Tool Trace Summary: ${JSON.stringify(toolTrace.map((t) => ({ tool: t.tool, summary: t.outputSummary })))}
+
+Provide the official tournament ruling for: "${lastUserMessage}".
+Structure your reply:
+1. ⚖️ **OFFICIAL ARBITER VERDICT:** State decisively who is right.
+2. 📜 **AUTHORITATIVE CITATION:** Quote the exact CR section code and official wording.
+3. 🚨 **ERRATA / TIMING OVERRIDE:** Explain the governing authority ruling.
+4. ❌ **WHY NAIVE LLMs HALLUCINATE:** Explain why vector keyword matching fails here.`
+
+        const groundedRes = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${effectiveApiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: groundedPrompt }] }] }),
+          }
+        )
+        if (groundedRes.ok) {
+          const groundedData = await groundedRes.json()
+          liveGroundedAnswer =
+            groundedData.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || ''
+        }
+      } catch (err) {
+        console.warn('Grounded LLM call failed:', err)
       }
     }
 
-    // Expert Local Forensic Responder
-    const lower = lastUserMessage.toLowerCase()
-    let expertResponse = ''
-
-    if (lower.includes('voice') || lower.includes('audio') || lower.includes('clone')) {
-      expertResponse = `🎙️ **Acoustic & Voice Clone Forensics Guide:**
-1. **The 16.0 kHz Brickwall Cutoff:** Neural text-to-speech models (like VALL-E, Bark, and earlier ElevenLabs models) typically downsample or synthesize audio with a sharp spectral cutoff at 16kHz or 22.05kHz. Genuine human studio microphones record up to 20kHz+ with smooth decay.
-2. **Biological Glottal Absence:** Humans naturally pause for sub-glottal inhalation (micro-breaths) every 4-8 seconds. Cloned audio often concatenates sentences without breathing sounds, or inserts static, cloned breath loops.
-3. **Micro-Tremor Flatness:** Human vocal cords under natural emotional tension have 2-4% fundamental frequency jitter (F0 fluctuations). Neural synthesis often sounds eerie because its pitch curve is mathematically sterile.
-4. **Phoneme Transition Slur:** Watch for unnatural blurring between hard consonants ('k', 'p', 't') and vowels.`
-    } else if (lower.includes('ela') || lower.includes('error level') || lower.includes('photo') || lower.includes('image')) {
-      expertResponse = `🔬 **Error Level Analysis (ELA) & Image Forensics:**
-1. **How ELA Works:** JPEG compression operates in 8x8 pixel discrete cosine transform (DCT) grids. Every time an image is modified and re-saved, the modified section has higher error delta than the untouched background.
-2. **Splicing Signatures:** If a face, placard, or object was pasted into an existing photo, the ELA view will show vibrant, glowing pixel noise along the spliced boundaries compared to the dull background.
-3. **Generative Diffusion Tell-Tale Signs:** Modern models (Midjourney, Flux, Stable Diffusion) struggle with:
-   - **Hand and finger micro-anatomy:** conjoined fingernails, extra phalanges.
-   - **Text rendering in backgrounds:** gibberish runes/pseudo-letters instead of real signage.
-   - **Dual shadow illumination:** shadows falling in contradictory angles, revealing multiple synthetic virtual light sources.`
-    } else if (lower.includes('video') || lower.includes('war') || lower.includes('face')) {
-      expertResponse = `📹 **Video Deepfake & CGI Detection Techniques:**
-1. **Blink & Eye Cadence:** Early deepfakes failed to simulate natural 15-20 blinks per minute. Modern diffusion videos have pupil reflection mismatches (corneal reflections showing different background environments in each eye).
-2. **Facial Boundary Mask Jitter:** When an actor's face turns past 45-60 degrees, 2D facial warping models (DeepFaceLab / FaceSwap) fail, showing warping or pixel distortion around the jawline and ears.
-3. **CGI Re-Purposing:** In viral war hoaxes, creators often capture gameplay from high-fidelity military simulators (like ARMA 3 or DCS World), downgrade the resolution to 360p, and add artificial shaky-cam to simulate handheld phone footage. Always check projectile physics and smoke particles.`
-    } else if (lower.includes('fact check') || lower.includes('source') || lower.includes('verify')) {
-      expertResponse = `🛡️ **Standard Fact-Checking Protocol:**
-1. **Reverse Image & Video Search:** Search Google Images, Yandex, and TinEye to identify the earliest timestamp and original context of the media.
-2. **IFCN Verified Registries:** Cross-reference reputable signatories of the International Fact-Checking Network (Reuters Fact Check, AP Fact Check, Snopes, Poynter).
-3. **C2PA Metadata Inspection:** Check if the file contains Content Credentials (cryptographic manifest proving whether camera hardware or Adobe Firefly / DALL-E generated it).
-4. **Emotional Urgency Red Flag:** Disinformation relies on the "Panic-Forward" loop ("Share this before it's deleted!"). If a post commands immediate panic without primary links, it is almost always fabricated.`
-    } else {
-      expertResponse = `🛡️ **TruthLens Forensic Assistant:**
-I am ready to assist with your investigation. You can ask me to:
-- Explain specific detection metrics (Authenticity score, ELA delta, Acoustic cutoff).
-- Walk through how to spot generative AI artifacts in viral photos or videos.
-- Guide you through cross-referencing claims against international fact-checking wires.
-- Analyze the evidentiary chain of custody in your generated Forensic Audit Certificate.`
+    // High-fidelity fallback / baseline generator if API key wasn't supplied or call failed
+    if (!liveNaiveAnswer) {
+      liveNaiveAnswer = arbitration.naiveLLMResponse ||
+        `"Based on surface card text, the ability appears to work intuitively because keywords match directly, without considering timing layers or stack zone boundaries."`
     }
 
-    return NextResponse.json({ reply: expertResponse })
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Chat failed' }, { status: 500 })
+    if (!liveGroundedAnswer) {
+      liveGroundedAnswer = arbitration.officialRuling
+    }
+
+    return NextResponse.json({
+      reply: liveGroundedAnswer,
+      naiveAnswer: liveNaiveAnswer,
+      toolCallsTrace: toolTrace,
+      verdictWinner: arbitration.verdictWinner,
+      citations: [
+        {
+          code: arbitration.ruleCitation.sectionCode,
+          title: arbitration.ruleCitation.title,
+          text: arbitration.ruleCitation.originalText,
+        },
+        ...(arbitration.errataOverride
+          ? [
+              {
+                code: arbitration.errataOverride.patchVersion,
+                title: arbitration.errataOverride.title,
+                text: arbitration.errataOverride.officialRulingText,
+                authority: arbitration.errataOverride.governingAuthority,
+                url: arbitration.errataOverride.sourceUrl,
+              },
+            ]
+          : []),
+      ],
+      provenanceHash: arbitration.provenanceHash,
+      executionTimeMs: Date.now() - startTime,
+    })
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Error processing inquiry'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

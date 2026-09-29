@@ -1,0 +1,110 @@
+import { defineField, defineType } from 'sanity'
+
+export const ruleErrataType = defineType({
+  name: 'ruleErrata',
+  title: 'Official Tournament Errata & FAQ Override',
+  type: 'document',
+  fields: [
+    defineField({
+      name: 'title',
+      title: 'Errata Title / Directive',
+      type: 'string',
+      description: 'e.g. Comprehensive Rules Update: Ward Counter Exemption, Balance Dataslate Q3 2024',
+      validation: (rule) => rule.required(),
+    }),
+    defineField({
+      name: 'slug',
+      title: 'Slug',
+      type: 'slug',
+      options: { source: 'title', maxLength: 96 },
+      validation: (rule) => rule.required(),
+    }),
+    defineField({
+      name: 'game',
+      title: 'Target Game',
+      type: 'reference',
+      to: [{ type: 'game' }],
+      validation: (rule) => rule.required(),
+    }),
+    defineField({
+      name: 'gameName',
+      title: 'Game Name (Cached)',
+      type: 'string',
+    }),
+    defineField({
+      name: 'supersedesRules',
+      title: 'Supersedes Base Rules',
+      type: 'array',
+      of: [{ type: 'reference', to: [{ type: 'gameRule' }] }],
+      description: 'The exact base rule(s) overridden or modified by this tournament errata.',
+      validation: (rule) => rule.required(),
+    }),
+    defineField({
+      name: 'effectiveDate',
+      title: 'Effective Tournament Date',
+      type: 'date',
+      validation: (rule) => rule.required(),
+    }),
+    defineField({
+      name: 'patchVersion',
+      title: 'Patch / Errata Version Code',
+      type: 'string',
+      description: 'e.g. CR Update 2024-09, Errata v2.3, Dataslate 1.4',
+      validation: (rule) => rule.required(),
+    }),
+    defineField({
+      name: 'governingAuthority',
+      title: 'Official Governing Body',
+      type: 'string',
+      description: 'e.g. Head Judge Council, Games Workshop Rules Commentary, Wizards Rules Manager',
+      validation: (rule) => rule.required(),
+    }),
+    defineField({
+      name: 'errataClassification',
+      title: 'Errata Classification',
+      type: 'string',
+      options: {
+        list: [
+          { title: '⚖️ Complete Override (Inverts Core Rule)', value: 'complete_override' },
+          { title: '🧩 Critical Timing / Priority Clarification', value: 'timing_priority' },
+          { title: '🛡️ Keyword Interaction Edge-Case', value: 'keyword_interaction' },
+          { title: '🚫 Tournament Ban / Functional Restriction', value: 'restriction' },
+        ],
+      },
+      validation: (rule) => rule.required(),
+    }),
+    defineField({
+      name: 'officialRulingText',
+      title: 'Definitive Tournament Errata Text',
+      type: 'text',
+      rows: 4,
+      description: 'Official wording that must be enforced at the table.',
+      validation: (rule) => rule.required(),
+    }),
+    defineField({
+      name: 'rationale',
+      title: 'Design Rationale & Intent',
+      type: 'text',
+      rows: 3,
+      description: 'Why the developers or judges altered the rule.',
+    }),
+    defineField({
+      name: 'sourceUrl',
+      title: 'Official Rulebook / FAQ URL',
+      type: 'url',
+    }),
+    defineField({
+      name: 'sourceDocumentLabel',
+      title: 'Source Document Citation',
+      type: 'string',
+      description: 'e.g. Magic Comprehensive Rules 2024 § 702.21a, Warhammer 40k Commentary p. 11',
+    }),
+    defineField({
+      name: 'whyVectorRAGFails',
+      title: 'Why Vector Embeddings Hallucinate on This',
+      type: 'text',
+      rows: 3,
+      description: 'Explains why similarity search merges outdated text with new errata without strict graph dereferencing.',
+    }),
+  ],
+})

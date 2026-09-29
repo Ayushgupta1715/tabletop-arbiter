@@ -1,12 +1,14 @@
-import { createClient, type QueryParams } from 'next-sanity'
+import { createClient } from 'next-sanity'
 import { apiVersion, dataset, projectId, useCdn } from '../env'
 import {
-  SEED_VERSION_DRIFTS,
-  SEED_LIBRARIES,
-  SEED_KNOWLEDGE_SOURCES,
-  VersionDriftRecord,
-  LibraryProfileRecord,
-  KnowledgeSourceRecord,
+  SEED_GAMES,
+  SEED_RULES,
+  SEED_ERRATAS,
+  SEED_DISPUTES,
+  GameRecord,
+  GameRuleRecord,
+  RuleErrataRecord,
+  DisputedScenarioRecord,
 } from './seedData'
 
 export const client = createClient({
@@ -16,216 +18,176 @@ export const client = createClient({
   useCdn,
 })
 
-// In-memory decision store for overrides across the session
-const localDecisionOverrides: Record<string, { status: VersionDriftRecord['decisionStatus']; decision: string }> = {}
-
 /**
- * Fetch Version Drift & Contradiction records from Sanity with library and keyword filtering
+ * Fetch all games
  */
-export async function getVersionDrifts(params?: {
-  library?: string
-  search?: string
-  category?: string
-}): Promise<VersionDriftRecord[]> {
+export async function getGames(): Promise<GameRecord[]> {
   try {
     if (projectId && projectId !== 'demo-sanity-hackathon') {
-      const query = `*[_type == "versionDriftRecord" 
-        && (!defined($library) || libraryName == $library)
-        && (!defined($category) || featureCategory == $category)
-      ] {
+      const query = `*[_type == "game"] | order(title asc) {
         "id": _id,
         title,
-        libraryName,
-        featureCategory,
-        driftSeverity,
-        queryPatterns,
-        scenarioSummary,
-        legacyVersion,
-        legacyClaim,
-        legacyCode,
-        legacySourceLabel,
-        legacySourceUrl,
-        currentVersion,
-        currentClaim,
-        currentCode,
-        currentSourceLabel,
-        currentSourceUrl,
-        communityClaim,
-        communitySourceLabel,
-        communitySourceUrl,
-        compilerError,
-        whyKeywordSearchFails,
-        resolutionDecision,
-        decisionStatus,
-        migrationDiff,
-        verifiedBySanity,
-        lastDecisionDate
+        "slug": slug.current,
+        publisher,
+        currentEdition,
+        category,
+        tournamentCircuit,
+        iconName,
+        description
       }`
-      const remote = await client.fetch(query, params as QueryParams)
-      if (remote && remote.length > 0) {
-        return remote
+      const remote = await client.fetch<GameRecord[]>(query)
+      if (remote && remote.length > 0) return remote
+    }
+  } catch (err) {
+    console.warn('[TableTop Arbiter] Sanity client fetch games failed, falling back to seed data:', err)
+  }
+  return SEED_GAMES
+}
+
+/**
+ * Fetch disputes with optional game filter
+ */
+export async function getDisputes(gameId?: string): Promise<DisputedScenarioRecord[]> {
+  try {
+    if (projectId && projectId !== 'demo-sanity-hackathon') {
+      const query = `*[_type == "disputedScenario" ${gameId ? '&& game._ref == $gameId' : ''}] | order(_createdAt desc) {
+        "id": _id,
+        title,
+        "slug": slug.current,
+        "gameId": game._ref,
+        gameName,
+        stakesLevel,
+        scenarioDescription,
+        playerAClaim,
+        playerBClaim,
+        naiveLLMAnswer,
+        groundedArbiterRuling,
+        winnerResolution,
+        "governingRuleId": governingRule._ref,
+        "governingErrataId": governingErrata._ref,
+        provenanceHash
+      }`
+      const remote = await client.fetch<DisputedScenarioRecord[]>(query, { gameId })
+      if (remote && remote.length > 0) return remote
+    }
+  } catch (err) {
+    console.warn('[TableTop Arbiter] Sanity client fetch disputes failed, falling back to seed data:', err)
+  }
+
+  if (gameId) {
+    return SEED_DISPUTES.filter((d) => d.gameId === gameId)
+  }
+  return SEED_DISPUTES
+}
+
+/**
+ * Fetch rule by ID with its overriding errata dereferenced via GROQ
+ */
+export async function getRuleWithErrata(ruleId: string): Promise<{
+  rule: GameRuleRecord | null
+  errata: RuleErrataRecord | null
+}> {
+  try {
+    if (projectId && projectId !== 'demo-sanity-hackathon') {
+      const query = `{
+        "rule": *[_type == "gameRule" && _id == $ruleId][0] {
+          "id": _id,
+          ruleTitle,
+          sectionCode,
+          "gameId": game._ref,
+          gameName,
+          ruleCategory,
+          originalRulebookEdition,
+          officialRawText,
+          apparentInterpretation,
+          isSuperseded
+        },
+        "errata": *[_type == "ruleErrata" && references($ruleId)][0] {
+          "id": _id,
+          title,
+          "slug": slug.current,
+          "gameId": game._ref,
+          gameName,
+          "supersedesRuleIds": supersedesRules[]._ref,
+          effectiveDate,
+          patchVersion,
+          governingAuthority,
+          errataClassification,
+          officialRulingText,
+          rationale,
+          sourceUrl,
+          sourceDocumentLabel,
+          whyVectorRAGFails
+        }
+      }`
+      const result = await client.fetch<{ rule: GameRuleRecord; errata: RuleErrataRecord }>(query, { ruleId })
+      if (result && result.rule) {
+        return result
       }
     }
   } catch (err) {
-    console.warn('Sanity remote fetch fallback to local Knowledge Base:', err)
+    console.warn('[TableTop Arbiter] Sanity client fetch rule with errata failed, falling back to seed data:', err)
   }
 
-  // Local Knowledge Base Filter
-  let results = SEED_VERSION_DRIFTS.map((record) => {
-    if (localDecisionOverrides[record.id]) {
-      return {
-        ...record,
-        decisionStatus: localDecisionOverrides[record.id].status,
-        resolutionDecision: localDecisionOverrides[record.id].decision,
-      }
+  const rule = SEED_RULES.find((r) => r.id === ruleId) || null
+  const errata = SEED_ERRATAS.find((e) => e.supersedesRuleIds.includes(ruleId)) || null
+
+  return { rule, errata }
+}
+
+/**
+ * Direct GROQ Search across Rules and Errata for the AI Agent
+ */
+export async function querySanityContextForArbiter(queryPrompt: string, gameFilter?: string): Promise<{
+  matchedRules: GameRuleRecord[]
+  activeErrata: RuleErrataRecord[]
+  relevantDisputes: DisputedScenarioRecord[]
+}> {
+  const normalized = queryPrompt.toLowerCase()
+
+  // 1. Filter relevant seed records if offline or demo
+  const matchedRules = SEED_RULES.filter((r) => {
+    if (gameFilter && r.gameId !== gameFilter && !r.gameName.toLowerCase().includes(gameFilter.toLowerCase())) {
+      return false
     }
-    return record
+    return (
+      r.ruleTitle.toLowerCase().includes(normalized) ||
+      r.officialRawText.toLowerCase().includes(normalized) ||
+      r.sectionCode.toLowerCase().includes(normalized) ||
+      normalized.includes(r.gameName.toLowerCase()) ||
+      normalized.split(' ').some((word) => word.length > 3 && r.ruleTitle.toLowerCase().includes(word))
+    )
   })
 
-  if (params?.library && params.library !== 'all') {
-    const lib = params.library.toLowerCase()
-    results = results.filter((r) => r.libraryName.toLowerCase().includes(lib))
-  }
+  const matchedRuleIds = new Set(matchedRules.map((r) => r.id))
 
-  if (params?.category && params.category !== 'all') {
-    results = results.filter((r) => r.featureCategory === params.category)
-  }
-
-  if (params?.search) {
-    const q = params.search.toLowerCase().trim()
-    const words = q.split(/\s+/).filter((w) => w.length > 2)
-
-    results = results.filter((r) => {
-      // 1. Direct match on patterns or titles
-      if (
-        r.title.toLowerCase().includes(q) ||
-        r.scenarioSummary.toLowerCase().includes(q) ||
-        r.queryPatterns.some((pattern) => pattern.toLowerCase().includes(q) || q.includes(pattern.toLowerCase()))
-      ) {
-        return true
-      }
-
-      // 2. Token overlap match
-      return words.some(
-        (w) =>
-          r.title.toLowerCase().includes(w) ||
-          r.legacyClaim.toLowerCase().includes(w) ||
-          r.currentClaim.toLowerCase().includes(w) ||
-          r.legacyCode.toLowerCase().includes(w) ||
-          r.currentCode.toLowerCase().includes(w) ||
-          r.queryPatterns.some((p) => p.toLowerCase().includes(w))
-      )
-    })
-  }
-
-  return results
-}
-
-/**
- * Fetch supported Library Profiles
- */
-export async function getLibraries(): Promise<LibraryProfileRecord[]> {
-  try {
-    if (projectId && projectId !== 'demo-sanity-hackathon') {
-      const query = `*[_type == "libraryProfile"] {
-        "id": _id,
-        name,
-        slug,
-        fromVersion,
-        toVersion,
-        majorShiftSummary,
-        officialDocsUrl,
-        migrationGuideUrl,
-        badgeColor
-      }`
-      const remote = await client.fetch(query)
-      if (remote && remote.length > 0) {
-        return remote
-      }
+  const activeErrata = SEED_ERRATAS.filter((e) => {
+    if (gameFilter && e.gameId !== gameFilter && !e.gameName.toLowerCase().includes(gameFilter.toLowerCase())) {
+      return false
     }
-  } catch (err) {
-    console.warn('Sanity libraries remote fetch fallback:', err)
-  }
+    const supersedesMatch = e.supersedesRuleIds.some((id) => matchedRuleIds.has(id))
+    const textMatch =
+      e.title.toLowerCase().includes(normalized) ||
+      e.officialRulingText.toLowerCase().includes(normalized) ||
+      e.rationale.toLowerCase().includes(normalized)
+    return supersedesMatch || textMatch
+  })
 
-  return SEED_LIBRARIES
-}
-
-/**
- * Fetch Ingested Knowledge Sources
- */
-export async function getKnowledgeSources(params?: {
-  library?: string
-  freshness?: string
-  search?: string
-}): Promise<KnowledgeSourceRecord[]> {
-  try {
-    if (projectId && projectId !== 'demo-sanity-hackathon') {
-      const query = `*[_type == "knowledgeSource"
-        && (!defined($library) || libraryName == $library)
-        && (!defined($freshness) || temporalFreshness == $freshness)
-      ] {
-        "id": _id,
-        title,
-        libraryName,
-        sourceType,
-        versionTarget,
-        temporalFreshness,
-        publishedYear,
-        sourceUrl,
-        authorOrDomain,
-        summary,
-        contradictionNotes,
-        status
-      }`
-      const remote = await client.fetch(query, params as QueryParams)
-      if (remote && remote.length > 0) {
-        return remote
-      }
+  const relevantDisputes = SEED_DISPUTES.filter((d) => {
+    if (gameFilter && d.gameId !== gameFilter && !d.gameName.toLowerCase().includes(gameFilter.toLowerCase())) {
+      return false
     }
-  } catch (err) {
-    console.warn('Sanity knowledge sources remote fetch fallback:', err)
-  }
-
-  let results = [...SEED_KNOWLEDGE_SOURCES]
-
-  if (params?.library && params.library !== 'all') {
-    const lib = params.library.toLowerCase()
-    results = results.filter((s) => s.libraryName.toLowerCase().includes(lib))
-  }
-
-  if (params?.freshness && params.freshness !== 'all') {
-    results = results.filter((s) => s.temporalFreshness === params.freshness)
-  }
-
-  if (params?.search) {
-    const q = params.search.toLowerCase()
-    results = results.filter(
-      (s) =>
-        s.title.toLowerCase().includes(q) ||
-        s.summary.toLowerCase().includes(q) ||
-        s.contradictionNotes.toLowerCase().includes(q) ||
-        s.authorOrDomain.toLowerCase().includes(q)
+    return (
+      d.title.toLowerCase().includes(normalized) ||
+      d.scenarioDescription.toLowerCase().includes(normalized) ||
+      normalized.split(' ').some((w) => w.length > 3 && d.title.toLowerCase().includes(w))
     )
-  }
+  })
 
-  return results
-}
-
-/**
- * Override / Record a Decision for a Version Drift Contradiction
- * (Carries decision into downstream agent builds via MCP memory)
- */
-export async function recordDriftDecision(
-  driftId: string,
-  decision: string,
-  status: VersionDriftRecord['decisionStatus'] = 'enforced_modern'
-) {
-  localDecisionOverrides[driftId] = { status, decision }
+  // If no direct keyword match, return top relevant sample so the agent is always grounded
   return {
-    driftId,
-    status,
-    decision,
-    recordedAt: new Date().toISOString(),
-    persistedToBuildMemory: true,
+    matchedRules: matchedRules.length > 0 ? matchedRules : [SEED_RULES[0]],
+    activeErrata: activeErrata.length > 0 ? activeErrata : [SEED_ERRATAS[0]],
+    relevantDisputes: relevantDisputes.length > 0 ? relevantDisputes : [SEED_DISPUTES[0]],
   }
 }

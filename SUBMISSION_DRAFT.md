@@ -1,82 +1,102 @@
-# 🛡️ TruthLens AI — Multimodal Deepfake & Fake News Forensic Intelligence Platform
+# ⚖️ TableTop Arbiter — Eliminating Rulebook Hallucinations with Sanity Context MCP & Structured Errata Lakes
 
-*Hackathon Project Submission — AI Fake News & Deepfake Detection Sentinel*
-
----
-
-## 💡 What I Built
-
-**TruthLens AI** is an autonomous, multimodal digital forensic intelligence platform built to counter the modern epidemic of AI-generated disinformation, synthetic voice cloning, photorealistic image manipulation, and video deepfakes.
-
-Unlike legacy fact-checkers that rely on manual reviews or unimodal text search, TruthLens AI provides:
-1. **Multimodal Analysis Suite:** Examines **Text articles**, **Images/Photos**, **Audio voice notes**, and **Video footage** in a single unified dashboard.
-2. **Real Browser-Based Error Level Analysis (ELA):** Runs client-side HTML5 canvas JPEG re-compression and differential error analysis to illuminate generative infill and spliced photo boundaries without server lag.
-3. **Acoustic Spectrogram Voice Clone Detection:** Identifies the telltale **16.0 kHz brickwall cutoff** and absent glottal breathing pulses typical of neural TTS models (ElevenLabs, VALL-E).
-4. **Wire Service Fact-Check Registry Corroboration:** Cross-references extracted claims against verified signatories of the International Fact-Checking Network (Reuters Fact Check, Associated Press, Snopes, Poynter IFCN).
-5. **Cryptographic SHA-256 Forensic Audit Certificate:** Produces a downloadable, immutable forensic audit report with media fingerprint hashes and verifiable chain-of-custody data.
-6. **Dual-Core Autonomous Engine:** Functions 100% out-of-the-box using deterministic local forensic heuristics, and seamlessly connects to **Google Gemini 2.0 Flash** for live deep multimodal semantic reasoning.
+*DEV Community x Sanity Challenge Submission — Path One: Ship an Agent That Queries Real Content*
 
 ---
 
-## ⚡ Why Existing Tools Fail (The Problem)
+## 🎯 What I Built
 
-- **Disinformation is Multimodal:** A modern propaganda campaign pairs an AI voice clone with a CGI video clip and a sensationalized WhatsApp forward. Text-only fact checkers fail to catch the audio/video component.
-- **Latency Kills Truth:** Traditional fact-checkers take 24–72 hours to publish a debunk. By then, a fabricated bank run or election claim has spread to millions of users.
-- **Lack of Explainability:** Simply telling a user "This is 85% fake" causes distrust. TruthLens AI provides **Explainable AI (XAI)**: highlighting specific ELA hotspots, spectrogram frequency voids, manipulative punctuation, and corroborated wire sources.
+**TableTop Arbiter** is an authoritative, zero-hallucination AI Head Tournament Judge for competitive tabletop games and trading card games, featuring deep, tournament-level grounding in **Magic: The Gathering (Comprehensive Rules 2024)**.
 
----
+In competitive gaming, rules arguments between players frequently stall high-stakes matches or ruin game nights. While players often consult modern LLMs (ChatGPT, Claude) for quick answers, standard LLMs and traditional vector-based RAG pipelines **routinely hallucinate** because they cannot distinguish between obsolete printed base rulebooks and newer official tournament errata, layer dependencies, or zone boundaries.
 
-## 🔬 Core Features & User Journey
-
-### 1. ⚡ Benchmark Arena (5 Ground-Truth Case Studies)
-Judges and users can instantly test the system with pre-calibrated real-world scenarios:
-- **Case 1 (Video):** *Viral War Combat Footage* — ARMA 3 video game capture disguised as active missile defense interception.
-- **Case 2 (Audio):** *Leaked CEO Insolvency Tape* — AI voice clone targeting retail stock markets.
-- **Case 3 (Image):** *Synthetic Cathedral Protest* — Midjourney v6 photorealistic generation with anatomical flaws and contradictory lighting.
-- **Case 4 (Text):** *Fabricated WHO Water Warning* — Viral WhatsApp forward engineered with emotional panic triggers.
-- **Case 5 (Control Benchmark):** *NASA Exoplanet Discovery* — Verified authentic scientific research published in Nature.
-
-### 2. 🎛️ Interactive Forensic Canvas
-- **For Images:** Side-by-side Original vs Differential Error Level Analysis (ELA) map with live amplifier slider (5x–40x) and quality adjustment.
-- **For Audio:** Real-time Mel-spectrogram frequency visualizer highlighting the 16.0 kHz neural vocoder cutoff.
-- **For Video:** 30fps frame-by-frame telemetry scrubber detecting optical flow and facial landmark distortion.
-- **For Text:** Deceptive syntax inspector highlighting emotional outrage triggers, unsubstantiated assertions, and verified citations.
-
-### 3. 🌐 Global Disinformation Threat Radar
-A live threat index tracking active disinformation campaigns, target vectors (finance, healthcare, elections), viral velocity, and instant forensic debunks.
-
-### 4. 🤖 TruthLens AI Forensic Copilot
-An interactive chatbot powered by Gemini 2.0 Flash and forensic heuristic knowledge, answering user inquiries on detection techniques, C2PA standards, and evidence interpretation.
-
-### 5. 📜 Official Forensic Audit Certificate
-Generates a cryptographically hashed (SHA-256) audit dossier exportable to JSON or printable as an official forensic certificate.
+**TableTop Arbiter fixes this by grounding the AI in a Sanity Structured Content Lake** via the **Model Context Protocol (MCP)**. Instead of relying on fuzzy vector embeddings, the arbiter uses **atomic GROQ graph dereferencing** (`*[_type == "ruleErrata" && references($ruleId)]`) to resolve contradictions deterministically and streams the live tool execution trace directly in the UI.
 
 ---
 
-## 🛠️ How It Was Built (Tech Stack)
+## ⚡ The Failure of Vector RAG vs The Sanity Solution
 
-- **Frontend & App Engine:** Next.js 16.3.5 (Turbopack, React 19, App Router)
-- **Styling & UI:** Tailwind CSS v4, Lucide Icons, Glassmorphism 3D styling
-- **Forensic Computation:**
-  - Client-side Canvas Error Level Analysis (`src/lib/elaProcessor.ts`)
-  - Discrete frequency & acoustic harmonic modeling (`src/lib/audioAnalysis.ts`)
-  - Linguistic deception & viral contagion heuristic algorithms (`src/lib/forensicEngine.ts`)
-- **Multimodal AI Reasoning:** Google Gemini 2.0 Flash API integration (`src/app/api/detect/route.ts` & `src/app/api/chat/route.ts`)
-- **Standards:** C2PA Content Provenance & IFCN Verification Protocols
+| Vector RAG / Generic LLM | Sanity Context MCP (TableTop Arbiter) |
+| :--- | :--- |
+| **Fuzzy Semantic Chunking:** Chunks text blindly; conflates permanent abilities with spell abilities. | **Typed Structured Schemas:** 18+ Comprehensive Rules documents with explicit section codes, categories, and zone tags. |
+| **Keyword-Matching Hallucinations:** Sees "cannot be countered" on a creature card and assumes it protects all subsequent fight spells. | **Relational Graph Dereferencing:** Uses `references($ruleId)` to verify zone scope (CR 604.3a) and active tournament errata. |
+| **Outdated Rule Bleed:** Surfaces old base rulebook text because it has high keyword overlap. | **Hierarchical Overrides:** Automatically dereferences superseding tournament directives and WotC Oracle updates. |
+| **Black-Box Scripted Answers:** "Trust me, I'm an AI." | **Live Agent Tool Trace:** Real-time visibility into every MCP tool call (`query_tournament_knowledge_lake`, `get_rule_errata_diff`, `resolve_tabletop_dispute`). |
+| **No Accountability:** No paper trail for tournament judges. | **Official Ruling Slip:** Generates printable/copyable certified tournament slips with SHA-256 provenance hashes. |
 
 ---
 
-## 🚀 Running the Project
+## 🔬 How Contradictions Were Discovered and Resolved
 
-```bash
-# Install dependencies
-npm install
+During the development and testing of TableTop Arbiter against the official **Magic: The Gathering Comprehensive Rules (CR)** and judge tournament logs, we discovered critical rules failure patterns where vector RAG and naive LLMs consistently fail:
 
-# Run development server
-npm run dev
+### 1. The Stack vs Battlefield Zone Boundary (Carnage Tyrant vs Ward {2})
+- **The Controversy:** Player A has Carnage Tyrant on the battlefield and casts *Bushwhack* (fight) targeting Player B's Ward {2} creature. Player A is tapped out and claims: *"Carnage Tyrant explicitly says 'This spell can't be countered', so Ward cannot counter the fight!"*
+- **Why Naive LLMs Hallucinate:** Vector search matches semantic tokens between "can't be countered" on Carnage Tyrant and Ward's "counter that spell unless paid", hallucinating that the creature's immunity protects the fight effect.
+- **The Sanity Resolution:** Sanity dereferences base rule **CR 604.3a** and **CR 113.6**: *"This spell can't be countered"* is a static ability that functions **solely while the card is a spell on the stack**. Once on the battlefield, Carnage Tyrant is a permanent, and the fight spell is an independent spell that does not inherit uncounterable status. Because Player A cannot pay {2}, Ward triggers and counters the fight spell under **CR 702.21a**. **Player B is UPHELD!**
 
-# Build for production
-npm run build
+### 2. Lethal Damage Assignment vs Destruction (Deathtouch + Trample vs Indestructible)
+- **The Controversy:** Player A attacks with a 6/6 creature with Deathtouch and Trample. Player B blocks with a 10/10 Indestructible blocker (Darksteel Colossus). Player A assigns 1 damage to the blocker and 5 damage to Player B. Player B argues: *"1 damage does not kill an Indestructible creature, so it's not lethal damage! You must assign all 6 to my blocker!"*
+- **Why Naive LLMs Hallucinate:** LLMs find that Indestructible permanents cannot be destroyed by lethal damage, hallucinating that an attacking creature cannot trample past an indestructible blocker without absorbing its full toughness.
+- **The Sanity Resolution:** Sanity dereferences **CR 702.2c** and **CR 702.19b**: Any nonzero damage from a deathtouch source is legally defined as "lethal damage" for assignment purposes. Player A only needs to assign 1 damage to the 10/10 indestructible blocker; the remaining 5 damage legally tramples through to Player B. **Player A is UPHELD!**
+
+### 3. Layer Subtype Overwrites vs Saga State-Based Actions (Blood Moon vs Urza's Saga)
+- **The Controversy:** Player A controls Urza's Saga with 2 lore counters. Player B resolves *Blood Moon* ("Nonbasic lands are Mountains"). Player A claims Urza's Saga stays on the battlefield tapping for {R}.
+- **Why Naive LLMs Hallucinate:** Vector RAG matches Blood Moon's text and concludes Urza's Saga simply stays on the battlefield tapping for red mana.
+- **The Sanity Resolution:** Sanity traverses **CR 305.7** (Layer 4 Subtype Overwrite) and **CR 704.5s** (Saga State-Based Actions). Blood Moon removes chapter abilities, setting the Saga's maximum chapter number to 0. Because 2 counters $\ge$ 0, Urza's Saga is **immediately sacrificed to the graveyard**. **Player B is UPHELD!**
+
+### 4. Stack Independence vs Battlefield Continuous Effects (Dress Down vs Thassa's Oracle)
+- **The Controversy:** Player A casts Thassa's Oracle with an empty library. In response to the ETB trigger on the stack, Player B flashes in *Dress Down* ("Creatures lose all abilities").
+- **The Sanity Resolution:** Sanity dereferences **CR 113.7a** and **CR 603.3**: Abilities on the stack exist independently of their sources. Removing abilities from the creature in Layer 6 does not remove the trigger from the stack. **Player A is UPHELD!**
+
+---
+
+## ⏱️ The 2-Minute Demo Flow
+
+1. **0:00 – 0:30 | The Naive Baseline:** Ask the unassisted model about Carnage Tyrant's fight spell targeting a Ward creature. Watch the naive LLM hallucinate that Player A is protected by "cannot be countered".
+2. **0:30 – 1:15 | The TableTop Arbiter (Live MCP Trace):** Click **Trace MCP Tools** or submit the inquiry. Watch the live MCP tool trace invoke `query_tournament_knowledge_lake`, `get_rule_errata_diff`, and `resolve_tabletop_dispute`. See the authoritative verdict upholding Player B with exact citations of CR 604.3a and CR 702.21a.
+3. **1:15 – 1:45 | Contradiction Matrix Inspection:** Open the **Contradictions Matrix** modal to inspect the side-by-side reconciliation of printed base rules vs authoritative tournament errata.
+4. **1:45 – 2:00 | Certified Tournament Slip:** Click **Generate Ruling Slip** (or press <kbd>G</kbd>) to view and copy the certified tournament adjudication certificate with its SHA-256 provenance hash.
+
+---
+
+## 🛠️ Sanity Schema & MCP Architecture
+
+The Sanity Content Lake models rules as an interconnected relational graph:
+
+```
+[Game: Magic: The Gathering]
+       ▲
+       │ belongsTo
+[GameRule (18+ Comprehensive Rules)] ◄──────┐ supersedesRules[]
+       ▲                                     │
+       │ governingRule                       │
+[DisputedScenario (4 Real Controversies)] ───┴──► [RuleErrata (WotC Oracle / Tournament Updates)]
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to explore the live platform.
+### Production MCP Server (`/api/sanity/mcp`)
+Exposes 4 production-grade Model Context Protocol tools:
+1. `query_tournament_knowledge_lake`: Queries the Sanity Content Lake for rules and errata via GROQ structured traversal.
+2. `get_rule_errata_diff`: Dereferences base rules against active superseding errata documents.
+3. `resolve_tabletop_dispute`: Evaluates tournament scenarios and computes verifiable SHA-256 provenance hashes.
+4. `fetch_supported_games`: Catalogs supported games and governing circuits.
+
+---
+
+## 🚀 Quickstart & Verification
+
+```bash
+# 1. Clone repository
+git clone https://github.com/your-username/tabletop-arbiter.git
+cd tabletop-arbiter
+
+# 2. Install dependencies
+npm install
+
+# 3. Start local development server
+npm run dev
+```
+
+- **Web UI:** [http://localhost:3000](http://localhost:3000)
+- **Embedded Sanity Studio:** [http://localhost:3000/studio](http://localhost:3000/studio)
+- **Live MCP HTTP Endpoint:** [http://localhost:3000/api/sanity/mcp](http://localhost:3000/api/sanity/mcp)
