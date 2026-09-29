@@ -97,6 +97,9 @@ npm install
 npm run dev
 ```
 
-- **Web UI:** [http://localhost:3000](http://localhost:3000)
-- **Embedded Sanity Studio:** [http://localhost:3000/studio](http://localhost:3000/studio)
-- **Live MCP HTTP Endpoint:** [http://localhost:3000/api/sanity/mcp](http://localhost:3000/api/sanity/mcp)
+- **Live Production App (Vercel):** [https://tabletop-arbiter.vercel.app](https://tabletop-arbiter.vercel.app)
+- **Live Sanity Studio:** [https://tabletop-arbiter.vercel.app/studio](https://tabletop-arbiter.vercel.app/studio)
+- **Live Production MCP Endpoint:** [https://tabletop-arbiter.vercel.app/api/sanity/mcp](https://tabletop-arbiter.vercel.app/api/sanity/mcp)
+- **Local Dev Server:** [http://localhost:3000](http://localhost:3000)
+- **Local Sanity Studio:** [http://localhost:3000/studio](http://localhost:3000/studio)
+- **Local MCP Endpoint:** [http://localhost:3000/api/sanity/mcp](http://localhost:3000/api/sanity/mcp)

@@ -5,6 +5,11 @@
 [![DEV Challenge](https://img.shields.io/badge/DEV%20Challenge-Sanity.io%20Path%20One-amber?style=for-the-badge)](https://dev.to/challenges/sanity-2026-09-16)
 [![Sanity MCP](https://img.shields.io/badge/Sanity%20Context-MCP%20JSON--RPC-blue?style=for-the-badge)](https://sanity.io)
 [![Next.js](https://img.shields.io/badge/Next.js-16.3-black?style=for-the-badge)](https://nextjs.org)
+[![Live on Vercel](https://img.shields.io/badge/Vercel-Live%20Deployment-success?style=for-the-badge&logo=vercel)](https://tabletop-arbiter.vercel.app)
+
+🔗 **Live Production URL:** [https://tabletop-arbiter.vercel.app](https://tabletop-arbiter.vercel.app)  
+🏛️ **Live Sanity Studio:** [https://tabletop-arbiter.vercel.app/studio](https://tabletop-arbiter.vercel.app/studio)  
+⚡ **Production MCP Endpoint:** [https://tabletop-arbiter.vercel.app/api/sanity/mcp](https://tabletop-arbiter.vercel.app/api/sanity/mcp)
 
 ---
 

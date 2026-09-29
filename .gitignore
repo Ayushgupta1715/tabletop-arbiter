@@ -45,3 +45,5 @@ ai_dev_agent/
 fitness_tracker/
 *.py
 *.bat
+
+.vercel
