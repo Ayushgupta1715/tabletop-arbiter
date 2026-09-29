@@ -154,16 +154,17 @@ export async function POST(req: Request) {
 
     // Support standard JSON-RPC 2.0 or direct tool call
     const toolName =
+      (method === 'tools/call' ? body.params?.name : null) ||
       tool ||
       body.name ||
       body.params?.name ||
-      (method === 'tools/call' ? body.params?.name : null) ||
       (typeof method === 'string' && method !== 'tools/call' ? method : null)
+
     const toolParams =
-      params ||
-      body.arguments ||
+      (method === 'tools/call' ? body.params?.arguments : null) ||
       body.params?.arguments ||
-      (method === 'tools/call' ? body.params?.arguments : {}) ||
+      body.arguments ||
+      params ||
       {}
 
     let result: unknown
