@@ -43,7 +43,5 @@ next-env.d.ts
 # scratch / unrelated
 ai_dev_agent/
 fitness_tracker/
-*.py
+video_build/
 *.bat
-
-.vercel
