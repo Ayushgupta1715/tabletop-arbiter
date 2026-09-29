@@ -4,17 +4,21 @@ import {
   getRuleErrataDiff,
   queryTournamentKnowledgeLake,
   fetchSupportedGames,
+  getInitialContext,
+  knowledgeBaseRead,
+  executeGroqQuery,
 } from '@/lib/mcp/sanityContext'
 
 // Returns MCP manifest & tools metadata
 export async function GET() {
   return NextResponse.json({
     mcpVersion: '1.0',
+    protocolVersion: '2024-11-05',
     server: {
       name: 'sanity-context-tabletop-arbiter-mcp',
       version: '1.0.0',
       description:
-        'Sanity Context MCP Server for TableTop Arbiter. Deterministic rules resolution and errata overrides for competitive tabletop games & TCGs (Magic: The Gathering, Warhammer 40k, Catan, Gloomhaven, D&D). Queries Sanity Content Lake using GROQ dereferencing to prevent LLM hallucinations.',
+        'Official Sanity Context MCP Server for TableTop Arbiter. Deterministic rules resolution and errata overrides for competitive tabletop games & TCGs (Magic: The Gathering, Warhammer 40k, Catan, Gloomhaven, D&D). Supports Sanity Knowledge Base Mode & GROQ Mode.',
     },
     capabilities: {
       tools: true,
@@ -22,6 +26,45 @@ export async function GET() {
       prompts: true,
     },
     tools: [
+      {
+        name: 'initial_context',
+        description:
+          'Official Sanity Context tool: Serves as the starting point for the agent by providing an outline of each Knowledge Base the endpoint serves.',
+        parameters: {
+          type: 'object',
+          properties: {},
+        },
+      },
+      {
+        name: 'knowledge_base_read',
+        description:
+          'Official Sanity Context tool: Reads the full content of one or more entries from the tournament Knowledge Bases using KB ID and entry paths.',
+        parameters: {
+          type: 'object',
+          properties: {
+            kbId: { type: 'string', description: 'The Knowledge Base ID (e.g. "kb_mtg_comprehensive_rules_2024")' },
+            entryPaths: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Array of entry paths to retrieve (e.g. ["mtg/cr/604-3a-stack-scope", "mtg/errata/2024-04-ward-vs-fight"])',
+            },
+          },
+          required: ['entryPaths'],
+        },
+      },
+      {
+        name: 'groq_query',
+        description:
+          'Official Sanity tool: Evaluates a GROQ graph query directly against the Sanity Structured Content Lake.',
+        parameters: {
+          type: 'object',
+          properties: {
+            query: { type: 'string', description: 'GROQ query string (e.g. "*[_type == \\"ruleErrata\\" && references($ruleId)]")' },
+            params: { type: 'object', description: 'Query parameters' },
+          },
+          required: ['query'],
+        },
+      },
       {
         name: 'resolve_tabletop_dispute',
         description:
@@ -126,6 +169,26 @@ export async function POST(req: Request) {
     let result: unknown
 
     switch (toolName) {
+      case 'initial_context':
+        result = await getInitialContext()
+        break
+
+      case 'knowledge_base_read':
+        result = await knowledgeBaseRead({
+          kbId: toolParams.kbId,
+          entryPaths: Array.isArray(toolParams.entryPaths)
+            ? toolParams.entryPaths
+            : [toolParams.entryPath || 'mtg/cr/604-3a-stack-scope'],
+        })
+        break
+
+      case 'groq_query':
+        result = await executeGroqQuery({
+          query: toolParams.query || '*[_type == "ruleErrata"]',
+          params: toolParams.params,
+        })
+        break
+
       case 'resolve_tabletop_dispute':
         result = await resolveTabletopDispute({
           scenarioQuery: toolParams.scenarioQuery || toolParams.query || '',
@@ -158,7 +221,7 @@ export async function POST(req: Request) {
             id: id || null,
             error: {
               code: -32601,
-              message: `Method or tool not found: ${toolName}. Available tools: resolve_tabletop_dispute, get_rule_errata_diff, query_tournament_knowledge_lake, fetch_supported_games`,
+              message: `Method or tool not found: ${toolName}. Available tools: initial_context, knowledge_base_read, groq_query, resolve_tabletop_dispute, get_rule_errata_diff, query_tournament_knowledge_lake, fetch_supported_games`,
             },
           },
           { status: 404 }
